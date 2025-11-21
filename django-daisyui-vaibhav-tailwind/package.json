@@ -1,0 +1,22 @@
+{
+  "name": "daisyui_dashboard",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "dev": "npx @tailwindcss/cli -i build-styles/app.css -o django_daisy/static/admin/css/app.css --minify --watch",
+    "build": "npx tailwindcss -i build-styles/customize.css -o django_daisy/static/admin/css/customized_components.css --minify"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "autoprefixer": "^10.4.21",
+    "daisyui": "^5.1.10",
+    "postcss": "^8.5.6",
+    "tailwindcss": "^4.1.13"
+  },
+  "dependencies": {
+    "@tailwindcss/cli": "^4.1.13"
+  }
+}

@@ -1,0 +1,8 @@
+from django.apps import AppConfig
+
+
+class RoomServiceConfig(AppConfig):
+    default_auto_field = 'django.db.models.BigAutoField'
+    name = 'room_service'
+    icon = 'fa fa-home'
+    priority = 0

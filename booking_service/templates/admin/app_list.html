@@ -1,0 +1,11 @@
+{% extends "admin/app_list.html" %}
+
+{% block sidebar_menu %}
+{{ block.super }}
+
+<li class="model-item">
+    <a href="{% url 'admin:booking-dashboard' %}">
+        📊 Booking Dashboard
+    </a>
+</li>
+{% endblock %}

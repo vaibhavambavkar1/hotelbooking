@@ -1,0 +1,121 @@
+{% extends "admin/base_site.html" %}
+{% load static %}
+
+{% block content %}
+
+<h2 class="text-xl font-bold mb-2">Room Status Dashboard</h2>
+
+
+
+<div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-6">
+
+    <div class="stat bg-base-100 shadow rounded-xl border border-base-300">
+        <div class="stat-title text-sm">Total Rooms</div>
+        <div class="stat-value text-primary">{{ total_rooms }}</div>
+    </div>
+
+    <div class="stat bg-base-100 shadow rounded-xl border border-base-300">
+        <div class="stat-title text-sm">Available</div>
+        <div class="stat-value text-success">{{ available }}</div>
+    </div>
+
+    <div class="stat bg-base-100 shadow rounded-xl border border-base-300">
+        <div class="stat-title text-sm">Reserved</div>
+        <div class="stat-value text-warning">{{ reserved }}</div>
+    </div>
+
+    <div class="stat bg-base-100 shadow rounded-xl border border-base-300">
+        <div class="stat-title text-sm">Occupied</div>
+        <div class="stat-value text-error">{{ occupied }}</div>
+    </div>
+
+    <div class="stat bg-base-100 shadow rounded-xl border border-base-300">
+        <div class="stat-title text-sm">Maintenance</div>
+        <div class="stat-value text-secondary">{{ maintenance }}</div>
+    </div>
+
+    <div class="stat bg-base-100 shadow rounded-xl border border-base-300">
+        <div class="stat-title text-sm">Checkout Today</div>
+        <div class="stat-value text-info">{{ checkout_today }}</div>
+    </div>
+
+</div>
+
+
+
+<div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+<div class="overflow-x-auto">
+<table class="table border border-base-300 w-full rounded-xl">
+        <thead>
+            <tr>
+                <th>Booking ID</th>
+                <th>Room</th>
+                <th>Customer</th>
+                <th>Checkin</th>
+                <th>Checkout</th>
+                <th>Status</th>
+            </tr>
+        </thead>
+
+        <tbody>
+            {% for b in bookings %}
+            <tr>
+                <td class="font-mono text-sm">{{ b.id }}</td>
+                <td class="font-semibold">Room {{ b.room.id }}</td>
+                <td>{{ b.customer.first_name }}</td>
+                <td>{{b.checkin_date}}</td>
+                <td>{{b.checkout_date}}</td>
+                <td>
+                    {% if b.booking_status == "reserved" %}
+                        <span class="badge badge-warning">Reserved</span>
+
+                    {% elif b.booking_status == "checkin" %}
+                        <span class="badge badge-info">Check-In</span>
+
+                    {% else %}
+                        <span class="badge">{{ b.get_booking_status_display }}</span>
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+<div class="overflow-x-auto">
+    <table class="table border border-base-300 w-full rounded-xl">
+    <thead>
+        <tr>
+            <th>Room</th>
+            <th>Status</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for room in rooms %}
+        <tr>
+            <td class="font-semibold">Room {{ room.id }}</td>
+
+            <td>
+                {% if room.status == 'available' %}
+                    <span class="badge badge-success">Available</span>
+
+                {% elif room.status == 'reserved' %}
+                    <span class="badge badge-warning">Reserved</span>
+
+                {% elif room.status == 'occupied' %}
+                    <span class="badge badge-error">Occupied</span>
+
+                {% elif room.status == 'maintenance' %}
+                    <span class="badge badge-secondary">Maintenance</span>
+
+                {% else %}
+                    <span class="badge">{{ room.get_status_display }}</span>
+                {% endif %}
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+</div>
+    </div>
+{% endblock %}
