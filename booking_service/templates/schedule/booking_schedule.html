@@ -1,0 +1,42 @@
+{% load static %}
+<div class="max-w-2xl mx-auto mt-8 p-6 bg-white rounded-xl shadow-lg">
+
+    <h2 class="text-2xl font-bold mb-4">
+        Room {{ room.id }} Schedule – {{ month }}/{{ year }}
+    </h2>
+
+    <div class="grid grid-cols-7 text-center font-semibold text-gray-700">
+        <div>Sun</div><div>Mon</div><div>Tue</div><div>Wed</div>
+        <div>Thu</div><div>Fri</div><div>Sat</div>
+    </div>
+
+    <div class="grid grid-cols-7 gap-2 mt-3">
+        {% for i in 1|to_month_start:year,month %}
+            <div></div>
+        {% endfor %}
+
+        {% for day in month|days_in_month:year %}
+            {% if day in days %}
+                <div class="p-3 rounded-lg bg-red-500 text-white font-semibold">
+                    {{ day }}
+                </div>
+            {% else %}
+                <div class="p-3 rounded-lg bg-green-100 text-gray-800">
+                    {{ day }}
+                </div>
+            {% endif %}
+        {% endfor %}
+    </div>
+
+    <div class="flex gap-4 mt-6 text-sm">
+        <div class="flex items-center gap-2">
+            <div class="w-4 h-4 bg-red-500 rounded"></div>
+            <span>Booked</span>
+        </div>
+        <div class="flex items-center gap-2">
+            <div class="w-4 h-4 bg-green-100 rounded"></div>
+            <span>Available</span>
+        </div>
+    </div>
+
+</div>

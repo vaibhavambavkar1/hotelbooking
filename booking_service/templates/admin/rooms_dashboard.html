@@ -48,7 +48,7 @@
 <table class="table border border-base-300 w-full rounded-xl">
         <thead>
             <tr>
-                <th>Booking ID</th>
+<!--                 <th>Booking ID</th> -->
                 <th>Room</th>
                 <th>Customer</th>
                 <th>Checkin</th>
@@ -60,17 +60,17 @@
         <tbody>
             {% for b in bookings %}
             <tr>
-                <td class="font-mono text-sm">{{ b.id }}</td>
+<!--                 <td class="font-mono text-sm">{{ b.id }}</td> -->
                 <td class="font-semibold">Room {{ b.room.id }}</td>
                 <td>{{ b.customer.first_name }}</td>
                 <td>{{b.checkin_date}}</td>
                 <td>{{b.checkout_date}}</td>
-                <td>
+                <td class="font-mono text-sm">
                     {% if b.booking_status == "reserved" %}
                         <span class="badge badge-warning">Reserved</span>
 
                     {% elif b.booking_status == "checkin" %}
-                        <span class="badge badge-info">Check-In</span>
+                        <span class="badge badge-error">Occupied</span>
 
                     {% else %}
                         <span class="badge">{{ b.get_booking_status_display }}</span>

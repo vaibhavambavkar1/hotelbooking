@@ -46,7 +46,7 @@ INSTALLED_APPS = [
     'additional_service.apps.AdditionalServiceConfig',
     'payment_service',
     'external_contacts_service',
-    'django_ledger',
+    # 'django_ledger',
     'tax_service',
 ]
 
@@ -172,3 +172,7 @@ DAISY_SETTINGS = {
 }
 
 DJANGO_LEDGER_USE_DEPRECATED_BEHAVIOR = False
+
+STATICFILES_DIRS = [
+    "static",
+]

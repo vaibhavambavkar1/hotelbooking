@@ -14,6 +14,7 @@ from django.contrib.admin.views.decorators import staff_member_required
 from django.db.models import Q
 from booking_service.models import Room
 from django.utils import timezone
+from django.contrib import admin
 
 def download_bill_pdf(request, booking_id):
     bill = FinalBill.objects.get(booking_id=booking_id)
@@ -194,3 +195,19 @@ def booking_dashboard(request):
         "bookings": bookings,
     }
     return render(request, "admin/rooms_dashboard.html", context)
+
+def advertisement(request):
+    context = admin.site.each_context(request)
+    rooms = (
+        Room.objects
+        .select_related("room_type")                  # load RoomType in same query
+        .prefetch_related("photos")                   # load all room photos
+        .prefetch_related("room_type__amenities")     # load amenities
+        # .filter(status=Room.Status.AVAILABLE)         # show only available rooms
+        .order_by("floor")                            # optional sorting
+    )
+    context.update({
+        "rooms": rooms,
+        "hotel_name": "Hotel Paradise"
+    })
+    return render(request, "admin/advertise.html", context)

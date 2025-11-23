@@ -21,7 +21,7 @@ from django.conf.urls.static import static
 # from booking_service.admin import admin_site
 urlpatterns = [
     path('admin/', admin.site.urls),
-path('ledger/', include('django_ledger.urls', namespace='django_ledger')),
+# path('ledger/', include('django_ledger.urls', namespace='django_ledger')),
 
     path('billing/', include('booking_service.urls')),
 # path('billing/', admin_site.urls),

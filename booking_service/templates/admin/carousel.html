@@ -1,0 +1,104 @@
+{% load static %}
+{% block content %}
+<style>
+    .carousel-item {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  transition: opacity .8s ease-in-out;
+}
+
+.carousel-item:first-child {
+  opacity: 1;
+}
+
+</style>
+<div class="relative w-full h-[600px] overflow-hidden">
+
+  <!-- Carousel Container -->
+  <div id="autoCarousel" class="carousel w-full h-full">
+
+    <!-- Slide 1 -->
+    <div id="slide1" class="carousel-item relative w-full">
+<img src="{% static 'images/1.jpg' %}" class="carousel w-full h-full">
+    </div>
+
+    <!-- Slide 2 -->
+    <div id="slide2" class="carousel-item relative w-full">
+<img src="{% static 'images/2.jpg' %}" class="carousel w-full h-full">
+    </div>
+
+    <!-- Slide 3 -->
+    <div id="slide3" class="carousel-item relative w-full" >
+<img src="{% static 'images/3.jpg' %}" class="carousel w-full h-full">
+    </div>
+
+    <!-- Slide 4 -->
+    <div id="slide4" class="carousel-item relative w-full">
+<img src="{% static 'images/4.jpg' %}" class="carousel w-full h-full">
+    </div>
+
+    <!-- Slide 5 -->
+    <div id="slide5" class="carousel-item relative w-full">
+<img src="{% static 'images/5.jpg' %}" class="carousel w-full h-full">
+    </div>
+
+  </div>
+
+  <!-- Overlay Content -->
+  <div class="absolute inset-0 bg-black/40 flex items-center px-12">
+    <div class="text-white max-w-xl">
+
+      <h1 class="text-5xl font-bold mb-4">Find Your Perfect Stay</h1>
+      <p class="mb-6 text-lg">Book luxury rooms, resorts, and hotels at the best price.</p>
+
+      <div class="flex gap-4 mb-8">
+        <a href="#contact" class="btn btn-warning">Contact Us</a>
+          <a href="#about" class="btn btn-success">About Us</a>
+      </div>
+
+      <form class="grid grid-cols-2 gap-4">
+        <input type="date" name="checkin" class="input input-bordered col-span-1" />
+        <input type="date" name="checkout" class="input input-bordered col-span-1" />
+
+        <select class="select select-bordered col-span-2">
+          <option>1 Guest</option>
+          <option>2 Guests</option>
+          <option>3 Guests</option>
+          <option>4+ Guests</option>
+        </select>
+
+        <button class="btn btn-accent col-span-2">Make Enquiry</button>
+      </form>
+
+    </div>
+  </div>
+
+</div>
+<!-- <script> -->
+<!-- let current = 0; -->
+<!-- const slides = ["#slide1", "#slide2", "#slide3", "#slide4", "#slide5"]; -->
+
+<!-- setInterval(() => { -->
+<!--     current = (current + 1) % slides.length; -->
+<!--     location.href = slides[current]; -->
+<!-- }, 4000); -->
+<!-- </script> -->
+
+<script>
+let index = 0;
+const slides = document.querySelectorAll('#autoCarousel .carousel-item');
+
+function showNextSlide() {
+  slides.forEach((s, i) => {
+    s.style.opacity = (i === index) ? "1" : "0";
+  });
+
+  index = (index + 1) % slides.length;
+}
+
+setInterval(showNextSlide, 3000);
+</script>
+
+{% endblock %}

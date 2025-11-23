@@ -165,3 +165,7 @@ class MyAdminSite(admin.AdminSite):
 #     #         return context
 #     #
 #     # admin_site = DashboardAdminSite(name="custom_admin")
+
+admin.site.site_header = "Hotel Management Admin"
+admin.site.site_title = "Hotel Admin Portal"
+admin.site.index_title = "Welcome to Hotel Dashboard"

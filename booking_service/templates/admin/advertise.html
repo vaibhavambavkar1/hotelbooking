@@ -1,0 +1,151 @@
+
+{% load static %}
+    <link href="https://cdn.jsdelivr.net/npm/daisyui@5" rel="stylesheet" type="text/css"/>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <link href="{% static 'admin/css/customized_components.css' %}?v=3" rel="stylesheet">
+
+    <link href="{% static 'admin/css/calendar.css' %}" rel="stylesheet">
+
+    <link rel="stylesheet" href="{% static 'admin/fonts/fontawesome-free-6.6.0-web/css/all.min.css' %}"/>
+    <link href="https://cdn.jsdelivr.net/npm/tom-select@2.4.3/dist/css/tom-select.css" rel="stylesheet">
+
+{% block content %}
+
+{% include "admin/daisy_navbar.html" %}
+
+{% include "admin/carousel.html" %}
+<!-- <section class="relative bg-no-repeat bg-cover bg-center -->
+<!--                 min-h-[40vh] md:min-h-[60vh] lg:min-h-[80vh]" -->
+<!--          style="background-image: url('{% static 'images/banner.svg' %}');"> -->
+
+<!--   <div class="hero-overlay bg-opacity-60"></div> -->
+<!--   <div class="hero-content text-center text-neutral-content"> -->
+<!--     <div class="max-w-2xl"> -->
+<!--        -->
+<!--       <h1 class="text-5xl font-bold mb-4 drop-shadow-lg"> -->
+<!--         Experience Luxury & Comfort -->
+<!--       </h1> -->
+<!--        -->
+<!--       <p class="mb-6 text-lg"> -->
+<!--         Welcome to {{ hotel_name }} — a perfect blend of elegance, relaxation, and unforgettable hospitality. -->
+<!--       </p> -->
+
+<!--       <a href="/booking/" -->
+<!--          class="btn btn-primary px-6 btn-lg rounded-full shadow-xl"> -->
+<!--         Book Now -->
+<!--       </a> -->
+<!--     </div> -->
+<!--   </div> -->
+</section>
+
+<!-- HIGHLIGHTS SECTION -->
+<section class="py-16 bg-base-100">
+  <div class="text-center mb-10">
+    <h2 class="text-4xl font-bold">Why Choose Us?</h2>
+  </div>
+
+  <div class="grid md:grid-cols-3 gap-8 px-8 lg:px-20">
+    
+    <div class="card bg-base-200 shadow-xl p-6 text-center">
+      <div class="text-4xl mb-3">🏨</div>
+      <h3 class="text-xl font-semibold mb-2">Luxury Rooms</h3>
+      <p>Beautifully designed rooms with modern amenities and stunning views.</p>
+    </div>
+    
+    <div class="card bg-base-200 shadow-xl p-6 text-center">
+      <div class="text-4xl mb-3">🍽️</div>
+      <h3 class="text-xl font-semibold mb-2">Fine Dining</h3>
+      <p>Multi-cuisine restaurant offering the finest dishes prepared by top chefs.</p>
+    </div>
+
+    <div class="card bg-base-200 shadow-xl p-6 text-center">
+      <div class="text-4xl mb-3">🏊</div>
+      <h3 class="text-xl font-semibold mb-2">Premium Facilities</h3>
+      <p>Swimming pool, spa, gym, banquet hall, conference rooms & much more.</p>
+    </div>
+
+  </div>
+</section>
+
+<!-- ROOMS SECTION -->
+<section class="py-16 bg-base-300">
+  <div class="text-center mb-10">
+    <h2 class="text-4xl font-bold">Featured Rooms</h2>
+  </div>
+
+  <div class="grid md:grid-cols-3 gap-8 px-8 lg:px-20">
+  {% for room in rooms %}
+<div class="card bg-base-100 shadow-xl rounded-2xl">
+    <!-- Display first photo -->
+    {% if room.photos.all %}
+        <img src="{{ room.photos.all.0.image.url }}" class="rounded-t-2xl h-64 w-full object-cover"/>
+    {% else %}
+        <div class="h-64 bg-gray-300 flex items-center justify-center text-xl text-gray-600">
+            No image available
+        </div>
+    {% endif %}
+
+    <div class="card-body">
+        <h2 class="card-title text-2xl font-bold">
+            {{ room.room_type.name }} – Room {{ room.id }}
+        </h2>
+
+        <p class="text-gray-600">
+            {{ room.room_type.description }}
+        </p>
+
+        <p class="mt-2">
+            <span class="font-semibold">Capacity:</span> {{ room.room_type.capacity }} guests
+        </p>
+
+        <p>
+            <span class="font-semibold">Rate:</span> ₹{{ room.room_type.base_rate }} / per person
+        </p>
+
+        <div class="mt-4">
+            <h3 class="font-semibold text-lg">Amenities</h3>
+            <ul class="list-disc ml-5 text-gray-600">
+                {% for a in room.room_type.amenities.all %}
+                    <li>{{ a.name }}</li>
+                {% endfor %}
+            </ul>
+        </div>
+
+        <a href="" class="btn btn-primary mt-5">
+            Book Now
+        </a>
+    </div>
+</div>
+{% endfor %}
+
+  </div>
+  
+</section>
+
+<!-- AMENITIES -->
+<section class="py-16 bg-base-100 text-center">
+  <h2 class="text-4xl font-bold mb-8">Amenities</h2>
+  <div class="grid md:grid-cols-4 gap-6 px-10 lg:px-32 text-lg">
+    
+    <div class="p-4 bg-base-200 shadow rounded-box">🌐 Free Wi-Fi</div>
+    <div class="p-4 bg-base-200 shadow rounded-box">🚗 Free Parking</div>
+    <div class="p-4 bg-base-200 shadow rounded-box">🍳 Breakfast Included</div>
+    <div class="p-4 bg-base-200 shadow rounded-box">🧖 Spa & Wellness</div>
+    <div class="p-4 bg-base-200 shadow rounded-box">🏋 Gym</div>
+    <div class="p-4 bg-base-200 shadow rounded-box">📺 Smart TVs</div>
+    <div class="p-4 bg-base-200 shadow rounded-box">🏊 Swimming Pool</div>
+    <div class="p-4 bg-base-200 shadow rounded-box">❄️ Air-Conditioned Rooms</div>
+
+  </div>
+</section>
+
+<!-- CTA SECTION -->
+<section class="py-20 text-center bg-gradient-to-r from-primary to-secondary text-white">
+  <h2 class="text-4xl font-bold mb-6">Plan Your Stay With Us!</h2>
+  <p class="mb-8 text-lg opacity-90">Luxury, hospitality, and comfort at its finest.</p>
+  <a href="/booking/" class="btn btn-lg btn-neutral px-8">Make a Reservation</a>
+</section>
+{% include "admin/about.html" %}
+{% include "admin/contact.html" %}
+{% include "admin/footer.html" %}
+{% endblock %}
