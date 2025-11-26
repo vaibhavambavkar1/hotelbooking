@@ -83,3 +83,15 @@ class Booking(models.Model):
                 super().save(*args, **kwargs)
 
 
+class Guest(models.Model):
+    booking = models.ForeignKey(
+        'Booking',
+        on_delete=models.CASCADE,
+        related_name='guests'
+    )
+    name = models.CharField(max_length=100)
+    age = models.PositiveIntegerField()
+    unique_id = models.CharField(max_length=100)
+
+    def __str__(self):
+        return f"{self.name} ({self.age})"

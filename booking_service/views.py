@@ -1,11 +1,10 @@
 from additional_service.models import ServiceOrder, ServiceOrderItem
 from payment_service.models import FinalBill
-from django.http import HttpResponse
+from django.http import HttpResponse,JsonResponse
 from reportlab.lib import colors
 from reportlab.lib.pagesizes import A4
 from reportlab.lib.styles import getSampleStyleSheet
 from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
-from django.http import JsonResponse
 from .models import Booking
 from django.shortcuts import render, get_object_or_404,redirect,reverse
 from django.contrib import messages
@@ -15,6 +14,7 @@ from django.db.models import Q
 from booking_service.models import Room
 from django.utils import timezone
 from django.contrib import admin
+from datetime import datetime,date,timedelta
 
 def download_bill_pdf(request, booking_id):
     bill = FinalBill.objects.get(booking_id=booking_id)
@@ -99,26 +99,57 @@ def download_bill_pdf(request, booking_id):
     return response
 
 def booking_calendar(request):
-    return render(request, "booking_calendar.html")
+    return render(request, "admin/booking_calendar.html")
 
 
 def booking_events(request):
     events = []
-    bookings = Booking.objects.select_related('room', 'customer').all()
 
+    rooms = Room.objects.all()
+    bookings = Booking.objects.select_related('room').all()
+
+    # 1. Create booking events
     for booking in bookings:
         events.append({
-            "title": f"Room {booking.room.id} ({booking.customer.first_name})",
-            "start": booking.checkin_date.isoformat(),
-            "end": booking.checkout_date.isoformat(),
+            "title": f"Room {booking.room.id} – {booking.booking_status}",
+            "room": booking.room.id,
+            "status": booking.booking_status,
+            "start": str(booking.checkin_date),
+            "end": str(booking.checkout_date),
             "backgroundColor": (
-                "#34d399" if booking.booking_status == Booking.BookingStatus.CHECKIN else
-                "#facc15" if booking.booking_status == Booking.BookingStatus.RESERVED else
-                "#ef4444" if booking.booking_status == Booking.BookingStatus.CANCELLED else
-                "#a1a1aa"
+                "teal" if booking.booking_status == Booking.BookingStatus.CHECKIN else
+                "orange" if booking.booking_status == Booking.BookingStatus.RESERVED else
+                "blue" if booking.booking_status == Booking.BookingStatus.CANCELLED else
+                "gray"
             ),
             "borderColor": "black",
         })
+
+    # 2. Generate availability for each room for next 30 days
+    today = date.today()
+    next_30_days = [today + timedelta(days=i) for i in range(180)]
+
+    for room in rooms:
+        for day in next_30_days:
+            # Check if this room is booked on this date
+            is_booked = bookings.filter(
+                room=room,
+                checkin_date__lte=day,
+                checkout_date__gt=day
+            ).exists()
+
+            if not is_booked:
+                # Create "Available" entry
+                events.append({
+                    "title": f"Room {room.id} – Available",
+                    "room": room.id,
+                    "status": "available",
+                    "start": str(day),
+                    "end": str(day + timedelta(days=1)),
+                    "backgroundColor": "green",
+                    "borderColor": "darkgreen",
+                })
+
     return JsonResponse(events, safe=False)
 
 
@@ -208,6 +239,85 @@ def advertisement(request):
     )
     context.update({
         "rooms": rooms,
-        "hotel_name": "Hotel Paradise"
+        "hotel_name": "Hotel Paradise",
+        "adult_range": range(1, 11),
+        "child_range": range(0, 6)
     })
     return render(request, "admin/advertise.html", context)
+
+def availability_for_date(request):
+    date_str = request.GET.get("date")
+    date = datetime.strptime(date_str, "%Y-%m-%d").date()
+
+    rooms = Room.objects.all()
+    booked = Booking.objects.filter(
+        Q(check_in__lte=date) & Q(check_out__gt=date)
+    ).values_list("room_id", flat=True)
+
+    available_rooms = rooms.exclude(id__in=booked)
+
+    return render(request, "availability.html", {
+        "date": date,
+        "available_rooms": available_rooms,
+        "booked_rooms": rooms.filter(id__in=booked),
+    })
+
+
+def availability_calendar(request):
+    today = date.today()
+    days = [today + timedelta(days=i) for i in range(30)]
+    rooms = Room.objects.all()
+
+    calendar = []
+
+    for d in days:
+        booked_ids = list(
+            Booking.objects.filter(
+                checkin_date__lte=d,
+                checkout_date__gt=d
+            ).values_list("room_id", flat=True)
+        )
+
+        calendar.append({
+            "date": d,
+            "available": rooms.exclude(id__in=booked_ids),
+            "booked": rooms.filter(id__in=booked_ids),
+            "available_count": rooms.exclude(id__in=booked_ids).count(),
+            "booked_count": rooms.filter(id__in=booked_ids).count(),
+        })
+
+    return render(request, "schedule/availability_calendar.html", {
+        "calendar": calendar
+    })
+
+
+# def booking_events(request):
+#     events = []
+#     bookings = Booking.objects.select_related("room")
+#
+#     for b in bookings:
+#         status_color = {
+#             "reserved": "#FFA500",    # Orange
+#             "checkin": "#008000",     # Green
+#             "occupied": "#0000FF",    # Blue
+#             "checkout": "#FF0000",    # Red
+#             "cancelled": "#808080"    # Gray
+#         }.get(b.status, "#999999")
+#
+#         events.append({
+#             "id": b.id,
+#             "title": f"{b.room.name} ({b.status})",
+#             "start": str(b.check_in),
+#             "end": str(b.check_out),
+#             "backgroundColor": status_color,
+#             "borderColor": status_color,
+#         })
+#
+#     return JsonResponse(events, safe=False)
+
+def sample(request):
+    context = {
+        "adult_range": range(1, 11),
+        "child_range": range(0, 6)
+    }
+    return render(request, "admin/arbnb_form.html",context)

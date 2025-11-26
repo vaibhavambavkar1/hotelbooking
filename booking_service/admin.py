@@ -3,15 +3,25 @@ from import_export.admin import ImportExportModelAdmin
 from django.urls import reverse
 from django.utils.html import format_html
 from django.contrib.admin.widgets import AdminSplitDateTime
-from .models import Booking
+from .models import Booking,Guest
 from room_service.models import Room
 from import_export.formats.base_formats import XLSX, CSV
 from django.urls import path
 from .services import room_dashboard
 from .views import booking_dashboard
+from .forms import GuestInlineFormset
+
+class GuestInline(admin.TabularInline):
+    model = Guest
+    extra = 0
+    formset = GuestInlineFormset
+
+
 
 @admin.register(Booking)
 class BookingAdmin(ImportExportModelAdmin,admin.ModelAdmin):
+    inlines = [GuestInline]
+
     list_display = (
         'id',
         'customer',
