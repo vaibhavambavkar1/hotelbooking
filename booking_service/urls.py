@@ -1,6 +1,6 @@
 
 from django.urls import path
-from .views import download_bill_pdf,booking_calendar,booking_events,cancel_reservation,checkout_room,checkin_room,advertisement,availability_calendar,sample
+from .views import download_bill_pdf,booking_calendar,booking_events,cancel_reservation,checkout_room,checkin_room,advertisement,availability_calendar,sample,search_rooms,create_booking
 from .services import room_dashboard
 
 
@@ -14,6 +14,7 @@ urlpatterns = [
     path("room-dashboard", room_dashboard, name="room_dashboard"),
     path("advertise", advertisement, name="advertise"),
 path("availability_calendar", availability_calendar, name="availability-calendar"),
-    path("sample",sample,name="sample")
+path("create_booking",create_booking,name="create_booking"),
+    path("sample",search_rooms,name="sample")
 
 ]

@@ -4,7 +4,7 @@ from decimal import Decimal
 from booking_service.models import Booking
 
 class ServiceItem(models.Model):
-    name = models.CharField(max_length=200)
+    name = models.CharField(max_length=200,db_index=True)
     service_type = models.CharField(
         max_length=50,
         choices=[('meal', 'Meal'), ('travel', 'Travel'), ('other', 'Other')]
@@ -18,7 +18,7 @@ class ServiceItem(models.Model):
 
 
 class ServiceOrder(models.Model):
-    id = models.UUIDField(primary_key=True, default=uuid4, editable=False)
+    id = models.UUIDField(primary_key=True, default=uuid4, editable=False,db_index=True)
     customer = models.ForeignKey(
         'customer_service.Customer',
         on_delete=models.CASCADE,
@@ -58,7 +58,7 @@ class ServiceOrderItem(models.Model):
         on_delete=models.CASCADE,
         related_name='items'
     )
-    service_item = models.ForeignKey(ServiceItem, on_delete=models.PROTECT)
+    service_item = models.ForeignKey(ServiceItem, on_delete=models.PROTECT,db_index=True)
     quantity = models.PositiveIntegerField(default=1)
     price = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True,null=True, blank=True)

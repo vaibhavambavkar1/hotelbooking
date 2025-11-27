@@ -7,8 +7,8 @@ from tax_service.models import Tax
 from tax_service.helper import calculate_tax,get_gst_taxes
 
 class FinalBill(models.Model):
-    id = models.UUIDField(primary_key=True, default=uuid4, editable=False)
-    booking = models.OneToOneField(Booking, on_delete=models.CASCADE, related_name='final_bill')
+    id = models.UUIDField(primary_key=True, default=uuid4, editable=False,db_index=True)
+    booking = models.OneToOneField(Booking, on_delete=models.CASCADE, related_name='final_bill',db_index=True)
     subtotal_room = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     subtotal_services = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     tax = models.DecimalField(max_digits=10, decimal_places=2, default=0)

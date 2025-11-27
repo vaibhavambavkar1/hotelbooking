@@ -2,9 +2,9 @@
 
 {% block content %}
 <div class="w-full flex justify-center mt-10">
-    <form method="GET" action=""
+    <form method="GET" action="{% url 'sample' %}"
           class="w-full max-w-md bg-white rounded-2xl shadow-lg p-8">
-
+        {% csrf_token %}
         <!-- Heading -->
         
         <!-- CHECK IN / CHECK OUT -->
@@ -30,6 +30,7 @@
                        name="checkout"
                        class="input input-bordered w-full rounded-xl h-14 text-base font-medium" />
             </div>
+            <p id="num_days" class="text-center text-lg font-semibold mt-2 text-gray-700"></p>
         </div>
 
         <!-- ADULTS / CHILDREN -->
@@ -62,7 +63,7 @@
         </div>
 
         <!-- SEARCH BUTTON -->
-        <button type="submit"
+        <button type="submit" id="search_btn"
                 class="btn w-full h-14 rounded-xl text-white text-lg font-semibold border-0
                        bg-gradient-to-r from-pink-500 to-red-500 hover:opacity-90 transition-all">
             Search
@@ -70,4 +71,48 @@
 
     </form>
 </div>
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+
+    const today = new Date().toISOString().split("T")[0];
+    const checkin  = document.querySelector("input[name='checkin']");
+    const checkout = document.querySelector("input[name='checkout']");
+    const output   = document.getElementById("num_days");
+
+    // Disable all past dates
+    checkin.min = today;
+    checkout.min = today;
+
+    // Ensure checkout date can't be before check-in
+    checkin.addEventListener("change", function () {
+        checkout.min = this.value;
+        calculateDays();
+    });
+
+    checkout.addEventListener("change", calculateDays);
+
+    function calculateDays() {
+        if (checkin.value && checkout.value) {
+            const inDate  = new Date(checkin.value);
+            const outDate = new Date(checkout.value);
+            
+            if (!checkin.value || !checkout.value) {
+            submitBtn.disabled = true;
+            return;
+        }
+        
+            const diff = (outDate - inDate) / (1000 * 60 * 60 * 24);
+
+            if (diff < 0) {
+                output.textContent = "Checkout must be after check-in";
+                output.style.color = "red";
+            } else {
+                output.style.color = "black";
+                output.textContent = `Total Nights: ${diff}`;
+            }
+        }
+    }
+
+});
+</script>
 {% endblock %}

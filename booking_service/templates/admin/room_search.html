@@ -1,0 +1,62 @@
+{% extends "admin/ui_base_style.html" %}
+ {% load static %}
+
+{% block content %}
+<!-- ROOMS SECTION -->
+{% include "admin/daisy_navbar.html" %}
+<section class="py-16 bg-base-300">
+  <div class="text-center mb-10">
+    <h2 class="text-4xl font-bold">Available Rooms for Booking        <button onclick="history.back()" class="btn btn-warning">
+    ← Go Back
+</button></h2>
+  </div>
+  <div class="grid md:grid-cols-3 gap-8 px-8 lg:px-20">
+  {% for room in rooms %}
+<div class="card bg-base-100 shadow-xl rounded-2xl">
+    <!-- Display first photo -->
+    {% if room.photos.all %}
+        <img src="{{ room.photos.all.0.image.url }}" class="rounded-t-2xl h-64 w-full object-cover"/>
+    {% else %}
+        <div class="h-64 bg-gray-300 flex items-center justify-center text-xl text-gray-600">
+            No image available
+        </div>
+    {% endif %}
+
+    <div class="card-body">
+        <h2 class="card-title text-2xl font-bold">
+            {{ room.room_type.name }} – Room {{ room.id }}
+        </h2>
+
+        <p class="text-gray-600">
+            {{ room.room_type.description }}
+        </p>
+
+        <p class="mt-2">
+            <span class="font-semibold">Capacity:</span> {{ room.room_type.capacity }} guests
+        </p>
+
+        <p>
+            <span class="font-semibold">Rate:</span> ₹{{ room.room_type.base_rate }} / per person
+        </p>
+
+        <div class="mt-4">
+            <h3 class="font-semibold text-lg">Amenities</h3>
+            <ul class="list-disc ml-5 text-gray-600">
+                {% for a in room.room_type.amenities.all %}
+                    <li>{{ a.name }}</li>
+                {% endfor %}
+            </ul>
+        </div>
+
+        <a href="{% url 'create_booking' %}" class="btn btn-primary mt-5">
+            Book Now
+        </a>
+    </div>
+</div>
+{% endfor %}
+  </div>
+</section>
+{% include "admin/about.html" %}
+{% include "admin/contact.html" %}
+{% include "admin/footer.html" %}
+ {% endblock %}

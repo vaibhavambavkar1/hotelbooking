@@ -10,11 +10,12 @@ from django.shortcuts import render, get_object_or_404,redirect,reverse
 from django.contrib import messages
 from django.db import transaction
 from django.contrib.admin.views.decorators import staff_member_required
-from django.db.models import Q
 from booking_service.models import Room
 from django.utils import timezone
 from django.contrib import admin
 from datetime import datetime,date,timedelta
+from django.db.models import Exists, OuterRef, Q
+from customer_service.models import Customer
 
 def download_bill_pdf(request, booking_id):
     bill = FinalBill.objects.get(booking_id=booking_id)
@@ -192,6 +193,23 @@ def checkout_room(request, booking_id):
 @transaction.atomic
 def checkin_room(request, booking_id):
     booking = get_object_or_404(Booking, id=booking_id)
+    today = timezone.localdate()
+
+    # Case 1: Too early
+    if today < booking.checkin_date:
+        messages.error(
+            request,
+            f"Check-in allowed only on {booking.checkin_date}. You are early."
+        )
+        return redirect(reverse("admin:booking_service_booking_change", args=[booking.id]))
+
+    # Case 2: Too late
+    if today > booking.checkin_date:
+        messages.error(
+            request,
+            f"Check-in date was {booking.checkin_date}. Cannot check in after the check-in date."
+        )
+        return redirect(reverse("admin:booking_service_booking_change", args=[booking.id]))
 
     if booking.booking_status in [Booking.BookingStatus.RESERVED]:
         booking.booking_status = Booking.BookingStatus.CHECKIN
@@ -291,33 +309,74 @@ def availability_calendar(request):
     })
 
 
-# def booking_events(request):
-#     events = []
-#     bookings = Booking.objects.select_related("room")
-#
-#     for b in bookings:
-#         status_color = {
-#             "reserved": "#FFA500",    # Orange
-#             "checkin": "#008000",     # Green
-#             "occupied": "#0000FF",    # Blue
-#             "checkout": "#FF0000",    # Red
-#             "cancelled": "#808080"    # Gray
-#         }.get(b.status, "#999999")
-#
-#         events.append({
-#             "id": b.id,
-#             "title": f"{b.room.name} ({b.status})",
-#             "start": str(b.check_in),
-#             "end": str(b.check_out),
-#             "backgroundColor": status_color,
-#             "borderColor": status_color,
-#         })
-#
-#     return JsonResponse(events, safe=False)
-
 def sample(request):
     context = {
         "adult_range": range(1, 11),
         "child_range": range(0, 6)
     }
-    return render(request, "admin/arbnb_form.html",context)
+
+def search_rooms(request):
+    context={}
+    checkin = request.GET.get("checkin")
+    checkout = request.GET.get("checkout")
+
+    available_rooms = Room.objects.all()
+
+    if checkin and checkout:
+        checkin = datetime.strptime(checkin, "%Y-%m-%d").date()
+        checkout = datetime.strptime(checkout, "%Y-%m-%d").date()
+
+        overlapping = Booking.objects.filter(
+            room_id=OuterRef("id"),
+            checkin_date__lt=checkout,
+            checkout_date__gt=checkin,
+        ).exclude(
+            booking_status="cancelled"
+        )
+
+        available_rooms = available_rooms.annotate(
+            has_overlap=Exists(overlapping)
+        ).filter(has_overlap=False).select_related("room_type").prefetch_related("photos","room_type__amenities")                   # load all room photos
+
+        context = {
+            "rooms": available_rooms,
+        }
+
+    return render(request, "admin/room_search.html", context)
+
+def create_booking(request):
+    if request.method == "POST":
+        # 1. Create customer
+        customer = Customer.objects.create(
+            first_name=request.POST["first_name"],
+            last_name=request.POST["last_name"],
+            email=request.POST["email"],
+            phone=request.POST["phone"],
+            dob=request.POST["dob"],
+            country=request.POST["country"],
+            state=request.POST["state"],
+            city=request.POST["city"],
+            address=request.POST["address"],
+            id_proof_document_number=request.POST["id_proof_document_number"],
+            image=request.FILES.get("image"),
+            id_proof=request.FILES.get("id_proof"),
+        )
+
+        # 2. Create booking
+        booking = Booking.objects.create(
+            customer=customer,
+            room_id=request.POST["room"],
+            checkin_date=request.POST["checkin_date"],
+            checkout_date=request.POST["checkout_date"],
+            notes=request.POST.get("notes", ""),
+            booking_status="reserved",
+        )
+
+        return redirect("booking_success")
+
+    else:
+        context={}
+        countries= Customer.COUNTRY_CHOICES
+        cities=Customer.INDIAN_STATE_CHOICES
+        context={"countries":countries,"cities":cities}
+        return render(request, "booking/create_booking.html",context)

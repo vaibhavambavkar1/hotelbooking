@@ -1,0 +1,145 @@
+{% extends "admin/ui_base_style.html" %}
+ {% load static %}
+
+{% block content %}
+{% include "admin/daisy_navbar.html" %}
+<div class="max-w-5xl mx-auto p-6">
+    <form method="POST" enctype="multipart/form-data" class="space-y-8">
+        {% csrf_token %}
+
+        <!-- CUSTOMER DETAILS -->
+        <div class="card bg-base-100 shadow-xl p-6">
+            <h2 class="text-xl font-semibold mb-4">Customer Details</h2>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+
+                <div>
+                    <label class="label">First Name</label>
+                    <input type="text" name="first_name" required class="input input-bordered w-full">
+                </div>
+
+                <div>
+                    <label class="label">Last Name</label>
+                    <input type="text" name="last_name" required class="input input-bordered w-full">
+                </div>
+
+                <div>
+                    <label class="label">Email</label>
+                    <input type="email" name="email" required class="input input-bordered w-full">
+                </div>
+
+                <div>
+                    <label class="label">Phone</label>
+                    <input type="text" name="phone" required class="input input-bordered w-full">
+                </div>
+
+                <div>
+                    <label class="label">Date of Birth (DD-MM-YYYY)</label>
+                    <input type="text" name="dob" required class="input input-bordered w-full">
+                </div>
+
+                <div>
+                    <label class="label">Country</label>
+                    <select name="country" class="select select-bordered w-full">
+                        {% for code,label in countries %}
+                            <option value="{{ code }}">{{ label }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div>
+                    <label class="label">State</label>
+                    <select name="state" class="select select-bordered w-full">
+                        {% for code,label in cities %}
+                            <option value="{{ code }}">{{ label }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div>
+                    <label class="label">City</label>
+                    <input type="text" name="city" class="input input-bordered w-full">
+                </div>
+
+                <div class="md:col-span-2">
+                    <label class="label">Address</label>
+                    <textarea name="address" class="textarea textarea-bordered w-full"></textarea>
+                </div>
+
+                <div>
+                    <label class="label">Customer Photo</label>
+                    <input type="file" name="image" accept="image/*" class="file-input file-input-bordered w-full">
+                </div>
+
+                <div>
+                    <label class="label">ID Proof Image</label>
+                    <input type="file" name="id_proof" accept="image/*" class="file-input file-input-bordered w-full">
+                </div>
+
+                <div class="md:col-span-2">
+                    <label class="label">ID Proof Document Number</label>
+                    <input type="text" name="id_proof_document_number" class="input input-bordered w-full">
+                </div>
+
+            </div>
+        </div>
+
+        <!-- BOOKING DETAILS -->
+        <div class="card bg-base-100 shadow-xl p-6">
+            <h2 class="text-xl font-semibold mb-4">Booking Details</h2>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+
+                <div>
+                    <label class="label">Select Room</label>
+                    <select name="room" required class="select select-bordered w-full">
+                        {% for room in rooms %}
+                        <option value="{{ room.id }}">{{ room.room_number }} ({{ room.room_type }})</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div>
+                    <label class="label">Check-In Date</label>
+                    <input type="date" name="checkin_date" id="checkin" required
+                        class="input input-bordered w-full">
+                </div>
+
+                <div>
+                    <label class="label">Check-Out Date</label>
+                    <input type="date" name="checkout_date" id="checkout" required
+                        class="input input-bordered w-full">
+                </div>
+                
+
+                <div class="md:col-span-2">
+                    <label class="label">Notes</label>
+                    <textarea name="notes" class="textarea textarea-bordered w-full"></textarea>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- SUBMIT BUTTON -->
+        <div class="text-right">
+            <button type="submit" class="btn btn-primary">Submit Booking</button>
+        </div>
+
+    </form>
+
+</div>
+{% include "admin/about.html" %}
+{% include "admin/contact.html" %}
+{% include "admin/footer.html" %}
+<script>
+    // Disable past dates
+    const today = new Date().toISOString().split("T")[0];
+    document.getElementById("checkin").min = today;
+    document.getElementById("checkout").min = today;
+
+    document.getElementById("checkin").addEventListener("change", function () {
+        document.getElementById("checkout").min = this.value;
+    });
+</script>
+
+ {% endblock %}

@@ -14,14 +14,14 @@ class Booking(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     customer = models.ForeignKey('customer_service.Customer', on_delete=models.CASCADE, related_name='bookings',null=False)
     room = models.ForeignKey(Room, on_delete=models.PROTECT, related_name='bookings',null=False,limit_choices_to={'status': Room.Status.AVAILABLE})
-    checkin_date = models.DateField(null=True, blank=True)
-    checkout_date = models.DateField(null=True, blank=True)
+    checkin_date = models.DateField(null=True, blank=True,db_index=True)
+    checkout_date = models.DateField(null=True, blank=True,db_index=True)
     total_amount = models.DecimalField(max_digits=10, decimal_places=2, default=0.0,null=True, blank=True)
     notes = models.TextField(blank=True, null=True)
     num_days = models.PositiveIntegerField(editable=False, default=1)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
-    booking_status=models.CharField(choices=BookingStatus.choices)
+    booking_status=models.CharField(choices=BookingStatus.choices,db_index=True)
 
     class Meta:
         ordering = ['-created_at']

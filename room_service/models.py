@@ -10,7 +10,7 @@ class Amenity(models.Model):
 
 
 class RoomType(models.Model):
-    id = models.AutoField(primary_key=True)
+    id = models.AutoField(primary_key=True,db_index=True)
     name = models.CharField(max_length=50)  # e.g., Deluxe, Suite
     description = models.TextField(blank=True)
     capacity = models.IntegerField()  # guests
@@ -26,7 +26,7 @@ class Room(models.Model):
         RESERVED = "reserved", "Reserved"
         OCCUPIED = "occupied", "Occupied"
         MAINTENANCE = "maintenance", "Maintenance"
-    id = models.CharField(max_length=10, primary_key=True,null=False,unique=True)  # room number
+    id = models.CharField(max_length=10, primary_key=True,null=False,unique=True,db_index=True)  # room number
     room_type = models.ForeignKey(RoomType, on_delete=models.PROTECT)
     floor = models.IntegerField()
     status = models.CharField(max_length=20, choices=Status.choices)
