@@ -1,7 +1,7 @@
 from django.contrib.admin.views.decorators import staff_member_required
 from django.db.models import Q
 from django.shortcuts import render
-from booking_service.models import Room, Booking
+from booking_service.models import Room, Booking,ContactMessage
 from django.utils import timezone
 from django.contrib import admin
 
@@ -16,7 +16,7 @@ def room_dashboard(request):
         Q(booking_status=Booking.BookingStatus.RESERVED) |
         Q(booking_status=Booking.BookingStatus.CHECKIN)
     ).select_related("room", "customer")
-
+    contact_messages = ContactMessage.objects.all()
     context.update({
         "total_rooms": rooms.count(),
         "available": rooms.filter(status=Room.Status.AVAILABLE).count(),
@@ -26,5 +26,6 @@ def room_dashboard(request):
         "checkout_today": Booking.objects.filter(checkout_date=today).count(),
         "rooms": rooms,
         "bookings": bookings,
+        "contact_messages":contact_messages,
     })
     return render(request, "admin/rooms_dashboard.html", context)

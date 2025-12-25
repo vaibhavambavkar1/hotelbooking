@@ -4,9 +4,9 @@
 {% block content %}
 
 {% include "admin/daisy_navbar.html" %}
-
+<div id="carousel">
 {% include "admin/carousel.html" %}
-
+</div>
 <!-- HIGHLIGHTS SECTION -->
 <section class="py-16 bg-base-100">
   <div class="text-center mb-10">
@@ -105,7 +105,7 @@
 <section class="py-20 text-center bg-gradient-to-r from-primary to-secondary text-white">
   <h2 class="text-4xl font-bold mb-6">Plan Your Stay With Us!</h2>
   <p class="mb-8 text-lg opacity-90">Luxury, hospitality, and comfort at its finest.</p>
-  <a href="/booking/" class="btn btn-lg btn-neutral px-8">Make a Reservation</a>
+  <a href="#carousel" class="btn btn-lg btn-warning px-8">Make a Reservation</a>
 </section>
 {% include "admin/about.html" %}
 {% include "admin/contact.html" %}

@@ -15,12 +15,12 @@
 
                 <div>
                     <label class="label">First Name</label>
-                    <input type="text" name="first_name" required class="input input-bordered w-full">
+                    <input type="text" name="first_name" required class="input input-bordered w-full" placeholder="Enter your First Name">
                 </div>
 
                 <div>
                     <label class="label">Last Name</label>
-                    <input type="text" name="last_name" required class="input input-bordered w-full">
+                    <input type="text" name="last_name" required class="input input-bordered w-full" placeholder="Enter your Last Name">
                 </div>
 
                 <div>
@@ -58,27 +58,27 @@
 
                 <div>
                     <label class="label">City</label>
-                    <input type="text" name="city" class="input input-bordered w-full">
+                    <input type="text" name="city" required class="input input-bordered w-full">
                 </div>
 
                 <div class="md:col-span-2">
                     <label class="label">Address</label>
-                    <textarea name="address" class="textarea textarea-bordered w-full"></textarea>
+                    <textarea name="address" class="textarea textarea-bordered w-full" required placeholder="Enter Full Address details Here"></textarea>
                 </div>
 
                 <div>
                     <label class="label">Customer Photo</label>
-                    <input type="file" name="image" accept="image/*" class="file-input file-input-bordered w-full">
+                    <input type="file" name="image" accept="image/*" class="file-input file-input-bordered w-full" required>
                 </div>
 
                 <div>
                     <label class="label">ID Proof Image</label>
-                    <input type="file" name="id_proof" accept="image/*" class="file-input file-input-bordered w-full">
+                    <input type="file" name="id_proof" accept="image/*" class="file-input file-input-bordered w-full" required>
                 </div>
 
                 <div class="md:col-span-2">
                     <label class="label">ID Proof Document Number</label>
-                    <input type="text" name="id_proof_document_number" class="input input-bordered w-full">
+                    <input type="text" name="id_proof_document_number" class="input input-bordered w-full" required placeholder="Enter Number Printed on the Uploaded ID proof">
                 </div>
 
             </div>
@@ -91,40 +91,47 @@
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
 
                 <div>
-                    <label class="label">Select Room</label>
-                    <select name="room" required class="select select-bordered w-full">
-                        {% for room in rooms %}
-                        <option value="{{ room.id }}">{{ room.room_number }} ({{ room.room_type }})</option>
-                        {% endfor %}
-                    </select>
+                    <label class="label">Room Number</label>
+                   <input type="text" name="room_number" class="input input-bordered w-full" value="{{room_id}}" readonly>
                 </div>
 
                 <div>
                     <label class="label">Check-In Date</label>
-                    <input type="date" name="checkin_date" id="checkin" required
-                        class="input input-bordered w-full">
+                    <input type="text" name="checkin_dt" class="input input-bordered w-full" value="{{checkin_dt}}" readonly>
                 </div>
 
                 <div>
                     <label class="label">Check-Out Date</label>
-                    <input type="date" name="checkout_date" id="checkout" required
-                        class="input input-bordered w-full">
+                   <input type="text" name="checkout_dt" class="input input-bordered w-full" value="{{checkout_dt}}" readonly>
                 </div>
                 
-
+                                <div>
+                    <label class="label">Adults count</label>
+                   <input type="text" id="adults" name="adults" class="input input-bordered w-full" value="{{adults}}" readonly>
+                </div>
+                
+                                <div>
+                    <label class="label">Children count</label>
+                   <input type="text" name="children" class="input input-bordered w-full" value="{{children}}" readonly>
+                </div>
+                
                 <div class="md:col-span-2">
-                    <label class="label">Notes</label>
+                    <label class="label">Leave your Message Here</label>
                     <textarea name="notes" class="textarea textarea-bordered w-full"></textarea>
                 </div>
-
+                
+                
+                <div id="fieldsContainer" class="md:col-span-2">
+                
+                </div>
             </div>
         </div>
 
         <!-- SUBMIT BUTTON -->
         <div class="text-right">
-            <button type="submit" class="btn btn-primary">Submit Booking</button>
+            <button type="submit" class="btn btn-success">Submit Booking</button>
+            <a href="{% url 'advertisement' %}" class="btn btn-warning px-8">Go Back to Home</a>
         </div>
-
     </form>
 
 </div>
@@ -132,14 +139,47 @@
 {% include "admin/contact.html" %}
 {% include "admin/footer.html" %}
 <script>
-    // Disable past dates
-    const today = new Date().toISOString().split("T")[0];
-    document.getElementById("checkin").min = today;
-    document.getElementById("checkout").min = today;
 
-    document.getElementById("checkin").addEventListener("change", function () {
-        document.getElementById("checkout").min = this.value;
-    });
+    const count = document.getElementById("adults").value;
+    const container = document.getElementById("fieldsContainer");
+
+    // Clear previous fields
+    container.innerHTML = "";
+
+
+    for (let i = 1; i <= count; i++) {
+        // Create a wrapper
+        const div = document.createElement("div");
+        div.className = "card bg-base-100 p-5 shadow-md";
+
+        // HTML block for each person
+        div.innerHTML = `
+            <h3 class="text-lg font-bold mb-2">Person ${i} Details</h3>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+
+                <div>
+                    <label class="label"><span class="label-text">Full Name</span></label>
+                    <input type="text" name="person_${i}_name" class="input input-bordered w-full" placeholder="Enter name" required>
+                </div>
+
+                <div>
+                    <label class="label"><span class="label-text">Age</span></label>
+                    <input type="text" name="person_${i}_age" class="input input-bordered w-full" placeholder="Enter age" required>
+                </div>
+
+                <div>
+                    <label class="label"><span class="label-text">Unique ID (Aadhaar / Passport)</span></label>
+                    <input type="text" name="person_${i}_id" class="input input-bordered w-full" placeholder="Enter ID" required>
+                </div>
+
+            </div>
+        `;
+
+        container.appendChild(div);
+    }
+
+
 </script>
 
  {% endblock %}

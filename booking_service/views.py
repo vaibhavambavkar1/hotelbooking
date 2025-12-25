@@ -5,7 +5,7 @@ from reportlab.lib import colors
 from reportlab.lib.pagesizes import A4
 from reportlab.lib.styles import getSampleStyleSheet
 from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
-from .models import Booking
+from .models import Booking,Guest,ContactMessage
 from django.shortcuts import render, get_object_or_404,redirect,reverse
 from django.contrib import messages
 from django.db import transaction
@@ -178,6 +178,15 @@ def cancel_reservation(request, booking_id):
 @transaction.atomic
 def checkout_room(request, booking_id):
     booking = get_object_or_404(Booking, id=booking_id)
+    today = timezone.localdate()
+    # Case 1: Too early
+    if today < booking.checkout_date:
+        messages.error(
+            request,
+            f"Check-Out allowed only on {booking.checkout_date}. You are early."
+        )
+        return redirect(reverse("admin:booking_service_booking_change", args=[booking.id]))
+
 
     if booking.booking_status in [Booking.BookingStatus.CHECKIN]:
         booking.booking_status = Booking.BookingStatus.CHECKOUT
@@ -232,6 +241,8 @@ def booking_dashboard(request):
         Q(booking_status=Booking.BookingStatus.RESERVED) |
         Q(booking_status=Booking.BookingStatus.CHECKIN)
     ).select_related("room", "customer")
+
+
 
     context = {
         "total_rooms": rooms.count(),
@@ -319,6 +330,8 @@ def search_rooms(request):
     context={}
     checkin = request.GET.get("checkin")
     checkout = request.GET.get("checkout")
+    adults= request.GET.get("adults")
+    children= request.GET.get("children")
 
     available_rooms = Room.objects.all()
 
@@ -340,13 +353,19 @@ def search_rooms(request):
 
         context = {
             "rooms": available_rooms,
+            "checkin_dt":checkin,
+            "checkout_dt":checkout,
+            "adults": adults,
+            "children":children,
         }
 
     return render(request, "admin/room_search.html", context)
 
+@transaction.atomic
 def create_booking(request):
     if request.method == "POST":
         # 1. Create customer
+        num_persons = int(request.POST.get("adults"))
         customer = Customer.objects.create(
             first_name=request.POST["first_name"],
             last_name=request.POST["last_name"],
@@ -363,20 +382,55 @@ def create_booking(request):
         )
 
         # 2. Create booking
+        checkin_date = request.POST["checkin_dt"].strip()
+        checkout_date = request.POST["checkout_dt"].strip()
+        checkin_d = datetime.strptime(checkin_date, "%b. %d, %Y").date()
+        checkout_d = datetime.strptime(checkout_date, "%b. %d, %Y").date()
         booking = Booking.objects.create(
             customer=customer,
-            room_id=request.POST["room"],
-            checkin_date=request.POST["checkin_date"],
-            checkout_date=request.POST["checkout_date"],
+            room_id=request.POST["room_number"],
+            checkin_date=checkin_d,
+            checkout_date=checkout_d,
             notes=request.POST.get("notes", ""),
-            booking_status="reserved",
+            booking_status=Booking.BookingStatus.RESERVED
         )
 
-        return redirect("booking_success")
+        #3 Create Guest Details
+        for i in range(1, num_persons + 1):
+            name = request.POST.get(f"person_{i}_name")
+            age = request.POST.get(f"person_{i}_age")
+            unique_id = request.POST.get(f"person_{i}_id")
+
+            if name and age and unique_id:  # Validate data
+                Guest.objects.create(
+                    booking=booking,
+                    name=name,
+                    age=age,
+                    unique_id=unique_id
+                )
+        messages.success(request, "Booking created successfully!")
+        return redirect("advertisement")
 
     else:
+        checkin_dt=request.GET.get("checkin_dt")
+        checkout_dt=request.GET.get("checkout_dt")
+        room_id=request.GET.get("room_id")
+        adults = request.GET.get("adults")
+        children = request.GET.get("children")
         context={}
         countries= Customer.COUNTRY_CHOICES
         cities=Customer.INDIAN_STATE_CHOICES
-        context={"countries":countries,"cities":cities}
+        context={"countries":countries,"cities":cities,"checkin_dt":checkin_dt,
+            "checkout_dt":checkout_dt,"room_id":room_id,"adults": adults,
+            "children":children,}
         return render(request, "booking/create_booking.html",context)
+
+def save_contact_message(request):
+    name=request.POST.get("name")
+    email = request.POST.get("email")
+    mobile = request.POST.get("mobile")
+    message = request.POST.get("message")
+    ContactMessage.objects.create(name=name,email=email,mobile=mobile,message=message)
+    messages.success(request, "Message Sent successfully!")
+    return redirect("advertisement")
+

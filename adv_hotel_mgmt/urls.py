@@ -18,11 +18,12 @@ from django.contrib import admin
 from django.urls import path,include
 from django.conf import settings
 from django.conf.urls.static import static
+from booking_service.urls import advertisement
 # from booking_service.admin import admin_site
 urlpatterns = [
     path('admin/', admin.site.urls),
-# path('ledger/', include('django_ledger.urls', namespace='django_ledger')),
-
+    path('ledger/', include('django_ledger.urls', namespace='django_ledger')),
+    path('', advertisement,name="advertisement"),
     path('billing/', include('booking_service.urls')),
-# path('billing/', admin_site.urls),
+    # path('billing/', admin_site.urls),
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

@@ -48,9 +48,17 @@
             </ul>
         </div>
 
-        <a href="{% url 'create_booking' %}" class="btn btn-primary mt-5">
+         <form action="{% url 'create_booking' %}" method="get">
+        <input type="hidden" name="room_id" value="{{ room.id }}">
+        <input type="hidden" name="checkin_dt" value="{{ checkin_dt }}">
+        <input type="hidden" name="checkout_dt" value="{{ checkout_dt }}">
+         <input type="hidden" name="adults" value="{{ adults }}">
+        <input type="hidden" name="children" value="{{ children }}">
+
+        <button class="btn btn-primary mt-5" type="submit">
             Book Now
-        </a>
+        </button>
+    </form>
     </div>
 </div>
 {% endfor %}

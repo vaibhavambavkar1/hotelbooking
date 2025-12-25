@@ -1,12 +1,28 @@
-{% extends "admin/base.html" %}
+<!-- {% extends "admin/base.html" %} -->
 
-{% block title %}{% if subtitle %}{{ subtitle }} | {% endif %}{{ title }} | {{ site_title|default:_('Site admin') }}{% endblock %}
+<!-- {% block title %}{% if subtitle %}{{ subtitle }} | {% endif %}{{ title }} | {{ site_title|default:_('Site admin') }}{% endblock %} -->
 
-{% block branding %}
-<div id="site-name"><a href="{% url 'admin:index' %}">{{ site_header|default:_('Administration') }}</a></div>
-{% if user.is_anonymous %}
-  {% include "admin/color_theme_toggle.html" %}
-{% endif %}
+<!-- {% block branding %} -->
+<!-- <div id="site-name"><a href="{% url 'admin:index' %}">{{ site_header|default:_('Administration') }}</a></div> -->
+<!-- {% if user.is_anonymous %} -->
+<!--   {% include "admin/color_theme_toggle.html" %} -->
+<!-- {% endif %} -->
+<!-- {% endblock %} -->
+
+<!-- {% block nav-global %}{% endblock %} -->
+
+{% extends "admin/base_site.html" %}
+
+{% block sidebar %}
+{{ block.super }}
+
+<div class="module">
+    <h3>Custom Tools</h3>
+    <ul class="nav flex-column">
+        {% for link in custom_links %}
+            <li><a href="{{ link.url }}">{{ link.name }}</a></li>
+        {% endfor %}
+    </ul>
+</div>
+
 {% endblock %}
-
-{% block nav-global %}{% endblock %}

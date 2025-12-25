@@ -3,7 +3,7 @@ from import_export.admin import ImportExportModelAdmin
 from django.urls import reverse
 from django.utils.html import format_html
 from django.contrib.admin.widgets import AdminSplitDateTime
-from .models import Booking,Guest
+from .models import Booking,Guest,ContactMessage
 from room_service.models import Room
 from import_export.formats.base_formats import XLSX, CSV
 from django.urls import path
@@ -16,6 +16,18 @@ class GuestInline(admin.TabularInline):
     extra = 0
     formset = GuestInlineFormset
 
+@admin.register(ContactMessage)
+class ContactMessageAdmin(admin.ModelAdmin):
+    list_display = ("name", "email", "mobile", "created_at")
+    search_fields = ("name", "email", "mobile")
+    list_filter = ("created_at",)
+
+
+@admin.register(Guest)
+class GuestAdmin(admin.ModelAdmin):
+    list_display = ('id', 'name', 'age', 'unique_id', 'booking')
+    search_fields = ('name', 'unique_id')
+    list_filter = ('booking',)
 
 
 @admin.register(Booking)
@@ -155,6 +167,16 @@ class BookingAdmin(ImportExportModelAdmin,admin.ModelAdmin):
 
 class MyAdminSite(admin.AdminSite):
 
+    def each_context(self, request):
+        context = super().each_context(request)
+        context['custom_links'] = [
+            {
+                "name": "Booking Dashboard",
+                "url": reverse("room_dashboard")
+            }
+        ]
+        return context
+
     def get_urls(self):
         urls = super().get_urls()
         custom_urls = [
@@ -162,7 +184,7 @@ class MyAdminSite(admin.AdminSite):
         ]
         return custom_urls + urls
 
-# admin_site = MyAdminSite()
+admin_site = MyAdminSite()
 # admin_site.register(Room)
 # admin_site.register(Booking)
 #

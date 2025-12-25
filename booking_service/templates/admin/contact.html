@@ -15,26 +15,26 @@
       <div class="card bg-base-100 shadow-xl p-8">
         <h3 class="text-2xl font-semibold mb-4">Send a Message</h3>
 
-        <form method="POST">
+        <form method="POST" action="{% url 'save_contact_message' %}">
           {% csrf_token %}
           <div class="form-control mb-4">
             <label class="label"><span class="label-text">Name   </span></label>
-            <input type="text" class="input input-bordered" placeholder="Enter your name" name="name">
+            <input type="text" class="input input-bordered" placeholder="Enter your Full name" name="name" required>
           </div>
 
           <div class="form-control mb-4">
             <label class="label"><span class="label-text">Email  </span></label>
-            <input type="email" class="input input-bordered" placeholder="Enter your email" name="email">
+            <input type="email" class="input input-bordered" placeholder="Enter your email" name="email" required>
           </div>
             
             <div class="form-control mb-4">
             <label class="label"><span class="label-text">Mobile </span></label>
-            <input type="mobile" class="input input-bordered" placeholder="Enter your Mobile Number" name="mobile">
+            <input type="mobile" class="input input-bordered" placeholder="Enter your Mobile Number" name="mobile" required>
           </div>
 
           <div class="form-control mb-4">
             <label class="label"><span class="label-text">Message</span></label>
-            <textarea class="textarea textarea-bordered h-32" placeholder="Your message..." name="message"></textarea>
+            <textarea class="textarea textarea-bordered h-32" placeholder="Your message..." name="message" required></textarea>
           </div>
 
           <button class="btn btn-primary w-full">Send Message</button>
