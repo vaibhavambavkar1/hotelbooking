@@ -46,7 +46,6 @@ INSTALLED_APPS = [
     'additional_service.apps.AdditionalServiceConfig',
     'payment_service',
     'external_contacts_service',
-    'django_ledger',
     'tax_service',
 ]
 
