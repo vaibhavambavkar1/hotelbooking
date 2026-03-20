@@ -24,8 +24,12 @@
                 </div>
 
                 <div>
-                    <label class="label">Email</label>
-                    <input type="email" name="email" required class="input input-bordered w-full">
+                    <label class="label">Email Address</label>
+                    <input type="email" name="email" required 
+                           class="input input-bordered w-full"
+                           placeholder="example@hotel.com"
+                           pattern="[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}$"
+                           title="Please enter a valid email address (e.g., user@example.com)">
                 </div>
 
                 <div>
@@ -35,7 +39,12 @@
 
                 <div>
                     <label class="label">Date of Birth (DD-MM-YYYY)</label>
-                    <input type="text" name="dob" required class="input input-bordered w-full">
+                    <input type="text" name="dob" id="dob" required 
+                           class="input input-bordered w-full"
+                           placeholder="31-12-1990"
+                           pattern="(0[1-9]|[12][0-9]|3[01])-(0[1-9]|1[012])-(19|20)\d\d"
+                           title="Enter date in DD-MM-YYYY format (e.g., 31-12-1990)"
+                           oninput="formatDate(this)">
                 </div>
 
                 <div>
@@ -49,11 +58,8 @@
 
                 <div>
                     <label class="label">State</label>
-                    <select name="state" class="select select-bordered w-full">
-                        {% for code,label in cities %}
-                            <option value="{{ code }}">{{ label }}</option>
-                        {% endfor %}
-                    </select>
+                    <input type="text" name="state" required 
+                           class="input input-bordered w-full" placeholder="Enter State">
                 </div>
 
                 <div>
@@ -165,7 +171,9 @@
 
                 <div>
                     <label class="label"><span class="label-text">Age</span></label>
-                    <input type="text" name="person_${i}_age" class="input input-bordered w-full" placeholder="Enter age" required>
+                    <input type="number" name="person_${i}_age" min="0" max="120" 
+                           class="input input-bordered w-full" placeholder="Enter age" required
+                           oninput="this.value = this.value.replace(/[^0-9]/g, '')">
                 </div>
 
                 <div>
@@ -182,4 +190,28 @@
 
 </script>
 
- {% endblock %}
+ <script>
+    function formatDate(input) {
+        let value = input.value.replace(/\D/g, '');
+        if (value.length > 8) value = value.slice(0, 8);
+        
+        let formattedValue = '';
+        if (value.length > 0) {
+            let day = value.slice(0, 2);
+            if (parseInt(day) > 31) day = '31';
+            formattedValue = day;
+            
+            if (value.length > 2) {
+                let month = value.slice(2, 4);
+                if (parseInt(month) > 12) month = '12';
+                formattedValue += '-' + month;
+                
+                if (value.length > 4) {
+                    formattedValue += '-' + value.slice(4, 8);
+                }
+            }
+        }
+        input.value = formattedValue;
+    }
+</script>
+{% endblock %}

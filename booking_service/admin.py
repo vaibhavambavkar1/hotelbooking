@@ -155,7 +155,7 @@ class BookingAdmin(ImportExportModelAdmin,admin.ModelAdmin):
 
 
     def view_bill_link(self, obj):
-        if hasattr(obj, 'final_bill'):
+        if obj.booking_status == Booking.BookingStatus.CHECKOUT and hasattr(obj, 'final_bill'):
             url = reverse('download_bill_pdf', args=[obj.id])
             return format_html(
                 f'<a href="{url}" target="_blank" '
@@ -163,7 +163,7 @@ class BookingAdmin(ImportExportModelAdmin,admin.ModelAdmin):
                 'border-radius:6px; text-decoration:none; font-size:0.9em;">Download</a>'
             )
         else:
-            pass
+            return format_html('<span style="color:gray;">---</span>')
 
 class MyAdminSite(admin.AdminSite):
 
@@ -198,6 +198,10 @@ admin_site = MyAdminSite()
 #     #
 #     # admin_site = DashboardAdminSite(name="custom_admin")
 
-admin.site.site_header = "Hotel Management Admin"
+admin.site.site_header = format_html(
+    'Hotel Management Admin '
+    '<a href="/billing/room-dashboard" style="margin-left: 15px; background: #0d9488; color: white; padding: 5px 12px; border-radius: 6px; font-size: 0.7em; text-decoration: none; vertical-align: middle;">📊 Room Dashboard</a>'
+    '<a href="/billing/calendar/" style="margin-left: 10px; background: #3b82f6; color: white; padding: 5px 12px; border-radius: 6px; font-size: 0.7em; text-decoration: none; vertical-align: middle;">📅 Calendar View</a>'
+)
 admin.site.site_title = "Hotel Admin Portal"
 admin.site.index_title = "Welcome to Hotel Dashboard"

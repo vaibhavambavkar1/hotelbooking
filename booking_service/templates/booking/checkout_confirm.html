@@ -1,0 +1,208 @@
+{% extends "admin/base_site.html" %}
+{% load i18n admin_urls static admin_modify %}
+
+{% block extrahead %}{{ block.super }}
+<style>
+    /* Use CSS variables for theme awareness */
+    :root {
+        --checkout-bg: #ffffff;
+        --checkout-text: #111827;
+        --bill-header-bg: #f9fafb;
+        --bill-border: #eeeeee;
+        --form-bg: #f3f4f6;
+    }
+
+    [data-theme='dark'],
+    .dark-mode,
+    body.dark {
+        --checkout-bg: #1f2937;
+        --checkout-text: #f9fafb;
+        --bill-header-bg: #374151;
+        --bill-border: #4b5563;
+        --form-bg: #111827;
+    }
+
+    .checkout-container {
+        max-width: 800px;
+        margin: 20px auto;
+        padding: 20px;
+        background: var(--checkout-bg);
+        color: var(--checkout-text);
+        border-radius: 8px;
+        border: 1px solid var(--bill-border);
+        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+    }
+
+    .bill-summary {
+        width: 100%;
+        border-collapse: collapse;
+        margin-bottom: 20px;
+    }
+
+    .bill-summary th,
+    .bill-summary td {
+        padding: 12px;
+        border-bottom: 1px solid var(--bill-border);
+        text-align: left;
+    }
+
+    .bill-summary th {
+        background-color: var(--bill-header-bg);
+        font-weight: 600;
+        color: var(--checkout-text);
+    }
+
+    .total-row {
+        font-size: 1.25em;
+        font-weight: bold;
+        color: #10b981;
+        /* Emerald-500 */
+    }
+
+    .form-group {
+        margin-top: 20px;
+        padding: 15px;
+        background: var(--form-bg);
+        border-radius: 6px;
+    }
+
+    .btn-checkout {
+        background-color: #0d9488 !important;
+        /* Teal-600 */
+        color: white !important;
+        padding: 10px 24px !important;
+        border: none !important;
+        border-radius: 6px !important;
+        cursor: pointer;
+        font-weight: bold;
+        transition: opacity 0.2s;
+    }
+
+    .btn-checkout:hover {
+        opacity: 0.9;
+    }
+
+    .btn-cancel {
+        background-color: #6b7280 !important;
+        /* Gray-500 */
+        color: white !important;
+        padding: 10px 24px !important;
+        border: none !important;
+        border-radius: 6px !important;
+        text-decoration: none;
+        display: inline-block;
+        margin-left: 10px;
+    }
+
+    input[type="number"] {
+        background-color: var(--checkout-bg);
+        color: var(--checkout-text);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div id="content-main">
+    <div class="checkout-container">
+        <h1 style="color: var(--checkout-text);">Confirm Checkout - {{ booking.customer }}</h1>
+        <p style="opacity: 0.8; margin-bottom: 20px;">Review the bill and apply any discount before checking out.</p>
+
+        <table class="bill-summary">
+            <thead>
+                <tr>
+                    <th>Description</th>
+                    <th>Amount</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>Room Charges ({{ booking.room.id }} - {{ booking.num_days }} days)</td>
+                    <td>{{ bill.subtotal_room }} INR</td>
+                </tr>
+                <tr>
+                    <td>Additional Services</td>
+                    <td>{{ bill.subtotal_services }} INR</td>
+                </tr>
+                <tr>
+                    <td>Tax Charges</td>
+                    <td>{{ bill.tax }} INR</td>
+                </tr>
+                <tr class="total-row">
+                    <td>Subtotal (Incl. Tax)</td>
+                    <td><span id="base-total-display">{{ bill.total }}</span> INR</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <form method="POST" id="checkout-form">
+            {% csrf_token %}
+            <div class="form-group">
+                <label for="discount" style="display: block; margin-bottom: 8px; font-weight: 600;">Apply Discount
+                    (INR):</label>
+                <input type="text" name="discount" id="discount" value="{{ bill.discount }}"
+                    placeholder="Enter discount value here"
+                    style="padding: 10px; width: 100%; max-width: 300px; border: 1px solid var(--bill-border); border-radius: 4px; outline: none;"
+                    oninput="this.value = this.value.replace(/[^0-9.]/g, '').replace(/(\..*)\./g, '$1'); updateTotal()">
+                <p id="discount-error" style="color: #ef4444; font-size: 0.85em; margin-top: 5px; display: none;"></p>
+
+                <div id="total-preview"
+                    style="margin-top: 15px; padding-top: 15px; border-top: 1px dashed var(--bill-border);">
+                    <p style="font-size: 1.1em; font-weight: 600;">
+                        Final Payable Amount: <span id="final-amount" style="color: #10b981;">{{ bill.total }}</span>
+                        INR
+                    </p>
+                </div>
+            </div>
+
+            <div style="margin-top: 30px; display: flex; align-items: center;">
+                <button type="submit" id="submit-btn" class="btn-checkout">Complete Checkout & Generate Bill</button>
+                <a href="{% url 'admin:booking_service_booking_changelist' %}" class="btn-cancel">Go Back</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    function updateTotal() {
+        var initialDiscount = parseFloat("{{ bill.discount }}") || 0;
+        var currentBillTotal = parseFloat("{{ bill.total }}") || 0;
+        var subtotalBeforeCurrentDiscount = currentBillTotal + initialDiscount;
+
+        var discountInput = document.getElementById('discount');
+        var errorDisplay = document.getElementById('discount-error');
+        var submitBtn = document.getElementById('submit-btn');
+        
+        var newDiscount = parseFloat(discountInput.value) || 0;
+        var isValid = true;
+        var errorMessage = "";
+
+        // 1. Check for negative value
+        if (newDiscount < 0) {
+            isValid = false;
+            errorMessage = "Discount cannot be negative.";
+        } 
+        // 2. Check for 100% discount (Final amount must be > 0)
+        else if (newDiscount >= subtotalBeforeCurrentDiscount) {
+            isValid = false;
+            errorMessage = "100% discount is not allowed. At least 1 INR must be charged.";
+        }
+
+        if (isValid) {
+            var finalValue = subtotalBeforeCurrentDiscount - newDiscount;
+            document.getElementById('final-amount').innerText = finalValue.toFixed(2);
+            errorDisplay.style.display = 'none';
+            submitBtn.disabled = false;
+            submitBtn.style.opacity = '1';
+        } else {
+            errorDisplay.innerText = errorMessage;
+            errorDisplay.style.display = 'block';
+            submitBtn.disabled = true;
+            submitBtn.style.opacity = '0.5';
+            document.getElementById('final-amount').innerText = "---";
+        }
+    }
+
+    // Initial check
+    window.onload = updateTotal;
+</script>
+{% endblock %}

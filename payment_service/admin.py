@@ -5,7 +5,7 @@ from import_export.formats.base_formats import XLSX, CSV
 
 @admin.register(FinalBill)
 class FinalBillAdmin(ImportExportModelAdmin,admin.ModelAdmin):
-    list_display = ('booking', 'subtotal_room', 'subtotal_services', 'tax', 'total', 'is_paid', 'generated_at')
+    list_display = ('booking', 'subtotal_room', 'subtotal_services', 'tax', 'discount', 'total', 'is_paid', 'generated_at')
     readonly_fields = ('booking','subtotal_room', 'subtotal_services', 'tax', 'total', 'generated_at')
     search_fields = ('booking__id', 'booking__customer__first_name', 'booking__customer__last_name')
     list_filter = ('is_paid','generated_at')

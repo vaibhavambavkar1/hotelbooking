@@ -12,6 +12,7 @@ from django.db import transaction
 from django.contrib.admin.views.decorators import staff_member_required
 from booking_service.models import Room
 from django.utils import timezone
+from decimal import Decimal
 from django.contrib import admin
 from datetime import datetime,date,timedelta
 from django.db.models import Exists, OuterRef, Q
@@ -78,8 +79,9 @@ def download_bill_pdf(request, booking_id):
 
     totals_data = [
         ["Room Total", f"{bill.subtotal_room} INR"],
-        ["Service Total", f" {bill.subtotal_services} INR"],
-        ["Tax", f" {bill.tax} INR"],
+        ["Service Total", f"{bill.subtotal_services} INR"],
+        ["Tax", f"{bill.tax} INR"],
+        ["Discount", f"- {bill.discount} INR"],
         ["Total Payable", f"{bill.total} INR"]
     ]
     totals_table = Table(totals_data, colWidths=[200, 120])
@@ -100,7 +102,11 @@ def download_bill_pdf(request, booking_id):
     return response
 
 def booking_calendar(request):
-    return render(request, "admin/booking_calendar.html")
+    context = admin.site.each_context(request)
+    context.update({
+        "title": "Booking Calendar",
+    })
+    return render(request, "admin/booking_calendar.html", context)
 
 
 def booking_events(request):
@@ -185,40 +191,65 @@ def checkout_room(request, booking_id):
             messages.info(request, f"Booking {booking.id} is already checked out.")
             return redirect(reverse("admin:booking_service_booking_changelist"))
 
-        # Case: Missing checkout date (e.g. cancelled)
+        # Case: Missing checkout date
         if not booking.checkout_date:
             messages.error(
                 request,
-                f"Cannot check out booking {booking.id} because it has no check-out date (Status: {booking.booking_status})."
+                f"Cannot check out booking {booking.id} because it has no check-out date."
             )
             return redirect(reverse("admin:booking_service_booking_change", args=[booking.id]))
 
         today = timezone.localdate()
-        # Case: Too early
+        # Case: Too early (optional - usually hotels allow early checkout, but we follow existing logic)
         if today < booking.checkout_date:
-            messages.error(
-                request,
-                f"Check-Out allowed only on {booking.checkout_date}. You are early."
-            )
-            return redirect(reverse("admin:booking_service_booking_change", args=[booking.id]))
-
-        if booking.booking_status == Booking.BookingStatus.CHECKIN:
-            booking.booking_status = Booking.BookingStatus.CHECKOUT
-            if booking.room:
-                booking.room.status = "available"
-                booking.room.save(update_fields=["status"])
-            booking.save(update_fields=["booking_status"], skip_status_update=True)
-            messages.success(request, f"Booking {booking.id} has been checked out successfully!")
-        else:
             messages.warning(
-                request, 
-                f"Booking {booking.id} cannot be checked out because it is currently in '{booking.get_booking_status_display()}' status."
+                request,
+                f"Note: Early Check-Out. Planned date was {booking.checkout_date}."
             )
+
+        # Get or Create FinalBill to show preview
+        bill, created = FinalBill.objects.get_or_create(booking=booking)
+        bill.calculate_totals() # Refresh totals based on current room days and services
+
+        if request.method == "POST":
+            # 1. Update Discount from POST data
+            discount_amount = request.POST.get("discount", "0")
+            try:
+                bill.discount = Decimal(discount_amount)
+            except:
+                bill.discount = Decimal("0.00")
+            
+            # 2. Finalize Bill
+            bill.save() # This calls calculate_totals() internally which applies discount
+
+            # 3. Perform Checkout
+            if booking.booking_status == Booking.BookingStatus.CHECKIN:
+                booking.booking_status = Booking.BookingStatus.CHECKOUT
+                if booking.room:
+                    booking.room.status = Room.Status.AVAILABLE
+                    booking.room.save(update_fields=["status"])
+                booking.save(update_fields=["booking_status"], skip_status_update=True)
+                
+                messages.success(request, f"Booking {booking.id} checked out. Final Total: {bill.total} INR")
+                return redirect(reverse("admin:booking_service_booking_changelist"))
+            else:
+                messages.error(request, f"Booking cannot be checked out (Status: {booking.booking_status})")
+                return redirect(reverse("admin:booking_service_booking_changelist"))
+
+        # GET: Show confirmation page with bill preview
+        context = {
+            "booking": booking,
+            "bill": bill,
+            "title": f"Checkout - {booking.customer}",
+            "today": today,
+        }
+        # We need to make sure the admin context is available if we want it to look like admin
+        context.update(admin.site.each_context(request))
+        return render(request, "booking/checkout_confirm.html", context)
             
     except Exception as e:
         messages.error(request, f"An error occurred during check-out: {str(e)}")
-        
-    return redirect(reverse("admin:booking_service_booking_changelist"))
+        return redirect(reverse("admin:booking_service_booking_changelist"))
 
 
 @transaction.atomic
@@ -321,6 +352,14 @@ def advertisement(request):
         "adult_range": range(1, 11),
         "child_range": range(0, 6)
     })
+    # Check for new booking confirmation
+    new_booking_id = request.session.pop('new_booking_id', None)
+    if new_booking_id:
+        try:
+            context['new_booking'] = Booking.objects.get(id=new_booking_id)
+        except Booking.DoesNotExist:
+            pass
+
     return render(request, "admin/advertise.html", context)
 
 def availability_for_date(request):
@@ -431,10 +470,19 @@ def create_booking(request):
         )
 
         # 2. Create booking
+        # Helper to parse different date formats
+        def parse_date(date_str):
+            for fmt in ("%b. %d, %Y", "%B %d, %Y", "%Y-%m-%d"):
+                try:
+                    return datetime.strptime(date_str, fmt).date()
+                except ValueError:
+                    continue
+            raise ValueError(f"Time data '{date_str}' does not match any known format")
+
         checkin_date = request.POST["checkin_dt"].strip()
         checkout_date = request.POST["checkout_dt"].strip()
-        checkin_d = datetime.strptime(checkin_date, "%b. %d, %Y").date()
-        checkout_d = datetime.strptime(checkout_date, "%b. %d, %Y").date()
+        checkin_d = parse_date(checkin_date)
+        checkout_d = parse_date(checkout_date)
         booking = Booking.objects.create(
             customer=customer,
             room_id=request.POST["room_number"],
@@ -458,6 +506,7 @@ def create_booking(request):
                     unique_id=unique_id
                 )
         messages.success(request, "Booking created successfully!")
+        request.session['new_booking_id'] = str(booking.id)
         return redirect("advertisement")
 
     else:
