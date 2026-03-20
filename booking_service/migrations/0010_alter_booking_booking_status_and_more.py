@@ -13,7 +13,7 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name='booking',
             name='booking_status',
-            field=models.CharField(choices=[('reserved', 'Reserved'), ('occupied', 'Occupied'), ('checkin', 'checkin'), ('checkout', 'checkout'), ('cancelled', 'cancelled')]),
+            field=models.CharField(choices=[('reserved', 'Reserved'), ('occupied', 'Occupied'), ('checkin', 'checkin'), ('checkout', 'checkout'), ('cancelled', 'cancelled')], max_length=20),
         ),
         migrations.AlterField(
             model_name='booking',

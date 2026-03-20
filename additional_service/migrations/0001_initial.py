@@ -31,7 +31,7 @@ class Migration(migrations.Migration):
                 ('customer_id', models.UUIDField()),
                 ('items', models.JSONField(default=list)),
                 ('total', models.DecimalField(decimal_places=2, max_digits=10)),
-                ('status', models.CharField(choices=[('ordered', 'ordered'), ('delivered', 'delivered'), ('cancelled', 'cancelled')])),
+                ('status', models.CharField(choices=[('ordered', 'ordered'), ('delivered', 'delivered'), ('cancelled', 'cancelled')], max_length=20)),
                 ('created_at', models.DateTimeField(auto_now_add=True)),
             ],
         ),

@@ -80,7 +80,7 @@ TEMPLATES = [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
-                'django_ledger.context.django_ledger_context',
+                #'django_ledger.context.django_ledger_context',
             ],
         },
     },
@@ -186,7 +186,7 @@ DAISY_SETTINGS = {
     },
 }
 
-DJANGO_LEDGER_USE_DEPRECATED_BEHAVIOR = False
+#DJANGO_LEDGER_USE_DEPRECATED_BEHAVIOR = False
 
 STATICFILES_DIRS = [
     "static",
