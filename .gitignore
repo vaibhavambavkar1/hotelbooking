@@ -1,4 +1,5 @@
 # Python
+__pycache__/
 *.py[cod]
 *$py.class
 *.so
@@ -48,12 +49,7 @@ db.sqlite3-journal
 *~
 .DS_Store
 
-# PyCharm
-.idea/
 
-# Byte-compiled / optimized / DLL files
-__pycache__/
-*.py[cod]
 
 # Testing
 .pytest_cache/
