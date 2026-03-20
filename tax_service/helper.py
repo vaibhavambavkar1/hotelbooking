@@ -2,11 +2,15 @@ from decimal import Decimal
 from .models import Tax
 
 def get_gst_taxes(category):
-    tax_obj=Tax.objects.get(category=category, active=True)
-    if tax_obj:
+    try:
+        tax_obj = Tax.objects.get(category=category, active=True)
         return tax_obj.percentage
-    else:
-        return Decimal("1")
+    except Tax.DoesNotExist:
+        # Return 0 percentage if tax record is not found to prevent crashing
+        return Decimal("0.00")
+    except Exception:
+        # Fallback for any other unexpected errors
+        return Decimal("0.00")
 
 
 # def get_food_taxes():

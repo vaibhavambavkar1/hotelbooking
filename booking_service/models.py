@@ -21,7 +21,7 @@ class Booking(models.Model):
     num_days = models.PositiveIntegerField(editable=False, default=1)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
-    booking_status=models.CharField(choices=BookingStatus.choices,db_index=True)
+    booking_status=models.CharField(max_length=20, choices=BookingStatus.choices, db_index=True)
 
     class Meta:
         ordering = ['-created_at']

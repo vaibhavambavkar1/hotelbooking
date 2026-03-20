@@ -177,57 +177,106 @@ def cancel_reservation(request, booking_id):
 
 @transaction.atomic
 def checkout_room(request, booking_id):
-    booking = get_object_or_404(Booking, id=booking_id)
-    today = timezone.localdate()
-    # Case 1: Too early
-    if today < booking.checkout_date:
-        messages.error(
-            request,
-            f"Check-Out allowed only on {booking.checkout_date}. You are early."
-        )
-        return redirect(reverse("admin:booking_service_booking_change", args=[booking.id]))
+    try:
+        booking = get_object_or_404(Booking, id=booking_id)
+        
+        # Case: Already checked out
+        if booking.booking_status == Booking.BookingStatus.CHECKOUT:
+            messages.info(request, f"Booking {booking.id} is already checked out.")
+            return redirect(reverse("admin:booking_service_booking_changelist"))
 
+        # Case: Missing checkout date (e.g. cancelled)
+        if not booking.checkout_date:
+            messages.error(
+                request,
+                f"Cannot check out booking {booking.id} because it has no check-out date (Status: {booking.booking_status})."
+            )
+            return redirect(reverse("admin:booking_service_booking_change", args=[booking.id]))
 
-    if booking.booking_status in [Booking.BookingStatus.CHECKIN]:
-        booking.booking_status = Booking.BookingStatus.CHECKOUT
-        if booking.room:
-            booking.room.status = "available"
-            booking.room.save(update_fields=["status"])
-            booking.save(update_fields=["booking_status"],skip_status_update=True)
+        today = timezone.localdate()
+        # Case: Too early
+        if today < booking.checkout_date:
+            messages.error(
+                request,
+                f"Check-Out allowed only on {booking.checkout_date}. You are early."
+            )
+            return redirect(reverse("admin:booking_service_booking_change", args=[booking.id]))
 
-        messages.success(request, f"Booking {booking.id} has been checked out successfully!")
+        if booking.booking_status == Booking.BookingStatus.CHECKIN:
+            booking.booking_status = Booking.BookingStatus.CHECKOUT
+            if booking.room:
+                booking.room.status = "available"
+                booking.room.save(update_fields=["status"])
+            booking.save(update_fields=["booking_status"], skip_status_update=True)
+            messages.success(request, f"Booking {booking.id} has been checked out successfully!")
+        else:
+            messages.warning(
+                request, 
+                f"Booking {booking.id} cannot be checked out because it is currently in '{booking.get_booking_status_display()}' status."
+            )
+            
+    except Exception as e:
+        messages.error(request, f"An error occurred during check-out: {str(e)}")
+        
     return redirect(reverse("admin:booking_service_booking_changelist"))
 
 
 @transaction.atomic
 def checkin_room(request, booking_id):
-    booking = get_object_or_404(Booking, id=booking_id)
-    today = timezone.localdate()
+    try:
+        booking = get_object_or_404(Booking, id=booking_id)
+        
+        # Case: Already checked in or checked out
+        if booking.booking_status == Booking.BookingStatus.CHECKIN:
+            messages.info(request, f"Booking {booking.id} is already checked in.")
+            return redirect(reverse("admin:booking_service_booking_changelist"))
+        
+        if booking.booking_status == Booking.BookingStatus.CHECKOUT:
+            messages.error(request, f"Cannot check in booking {booking.id} as it is already checked out.")
+            return redirect(reverse("admin:booking_service_booking_changelist"))
 
-    # Case 1: Too early
-    if today < booking.checkin_date:
-        messages.error(
-            request,
-            f"Check-in allowed only on {booking.checkin_date}. You are early."
-        )
-        return redirect(reverse("admin:booking_service_booking_change", args=[booking.id]))
+        # Case: Missing check-in date (e.g. cancelled)
+        if not booking.checkin_date:
+            messages.error(
+                request,
+                f"Cannot check in booking {booking.id} because it has no check-in date (Status: {booking.booking_status})."
+            )
+            return redirect(reverse("admin:booking_service_booking_change", args=[booking.id]))
 
-    # Case 2: Too late
-    if today > booking.checkin_date:
-        messages.error(
-            request,
-            f"Check-in date was {booking.checkin_date}. Cannot check in after the check-in date."
-        )
-        return redirect(reverse("admin:booking_service_booking_change", args=[booking.id]))
+        today = timezone.localdate()
 
-    if booking.booking_status in [Booking.BookingStatus.RESERVED]:
-        booking.booking_status = Booking.BookingStatus.CHECKIN
-        if booking.room:
-            booking.room.status = Room.Status.OCCUPIED
-            booking.room.save(update_fields=["status"])
-            booking.save(update_fields=["booking_status"],skip_status_update=True)
+        # Case 1: Too early
+        if today < booking.checkin_date:
+            messages.error(
+                request,
+                f"Check-in allowed only on {booking.checkin_date}. You are early."
+            )
+            return redirect(reverse("admin:booking_service_booking_change", args=[booking.id]))
 
-        messages.success(request, f"Booking {booking.id} has been checked in successfully!")
+        # Case 2: Too late
+        if today > booking.checkin_date:
+            messages.error(
+                request,
+                f"Check-in date was {booking.checkin_date}. Cannot check in after the check-in date."
+            )
+            return redirect(reverse("admin:booking_service_booking_change", args=[booking.id]))
+
+        if booking.booking_status == Booking.BookingStatus.RESERVED:
+            booking.booking_status = Booking.BookingStatus.CHECKIN
+            if booking.room:
+                booking.room.status = Room.Status.OCCUPIED
+                booking.room.save(update_fields=["status"])
+            booking.save(update_fields=["booking_status"], skip_status_update=True)
+            messages.success(request, f"Booking {booking.id} has been checked in successfully!")
+        else:
+            messages.warning(
+                request,
+                f"Booking {booking.id} cannot be checked in because it is currently in '{booking.get_booking_status_display()}' status."
+            )
+            
+    except Exception as e:
+        messages.error(request, f"An error occurred during check-in: {str(e)}")
+        
     return redirect(reverse("admin:booking_service_booking_changelist"))
 
 
