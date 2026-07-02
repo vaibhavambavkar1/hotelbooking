@@ -453,7 +453,8 @@ def search_rooms(request):
 def create_booking(request):
     if request.method == "POST":
         # 1. Create customer
-        num_persons = int(request.POST.get("adults"))
+        adults_str = request.POST.get("adults")
+        num_persons = int(adults_str) if adults_str and adults_str.isdigit() else 1
         customer = Customer.objects.create(
             first_name=request.POST.get("first_name", ""),
             last_name=request.POST.get("last_name", ""),
