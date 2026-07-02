@@ -452,6 +452,11 @@ def search_rooms(request):
 @transaction.atomic
 def create_booking(request):
     if request.method == "POST":
+        room_number = request.POST.get("room_number")
+        if not Room.objects.filter(id=room_number).exists():
+            messages.error(request, f"Error: Room '{room_number}' does not exist in the system.")
+            return redirect(request.get_full_path())
+        
         # 1. Create customer
         adults_str = request.POST.get("adults")
         num_persons = int(adults_str) if adults_str and adults_str.isdigit() else 1
@@ -482,8 +487,13 @@ def create_booking(request):
 
         checkin_date = request.POST["checkin_dt"].strip()
         checkout_date = request.POST["checkout_dt"].strip()
-        checkin_d = parse_date(checkin_date)
-        checkout_d = parse_date(checkout_date)
+        try:
+            checkin_d = parse_date(checkin_date)
+            checkout_d = parse_date(checkout_date)
+        except ValueError as e:
+            messages.error(request, str(e))
+            return redirect(request.get_full_path())
+            
         booking = Booking.objects.create(
             customer=customer,
             room_id=request.POST["room_number"],
