@@ -1,5 +1,5 @@
 {% extends "admin/ui_base_style.html" %}
- {% load static %}
+{% load static %}
 
 {% block content %}
 {% include "admin/daisy_navbar.html" %}
@@ -15,21 +15,21 @@
 
                 <div>
                     <label class="label">First Name</label>
-                    <input type="text" name="first_name" required class="input input-bordered w-full" placeholder="Enter your First Name">
+                    <input type="text" name="first_name" required class="input input-bordered w-full"
+                        placeholder="Enter your First Name">
                 </div>
 
                 <div>
                     <label class="label">Last Name</label>
-                    <input type="text" name="last_name" required class="input input-bordered w-full" placeholder="Enter your Last Name">
+                    <input type="text" name="last_name" required class="input input-bordered w-full"
+                        placeholder="Enter your Last Name">
                 </div>
 
                 <div>
                     <label class="label">Email Address</label>
-                    <input type="email" name="email" required 
-                           class="input input-bordered w-full"
-                           placeholder="example@hotel.com"
-                           pattern="[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}$"
-                           title="Please enter a valid email address (e.g., user@example.com)">
+                    <input type="email" name="email" class="input input-bordered w-full" placeholder="example@hotel.com"
+                        pattern="[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}$"
+                        title="Please enter a valid email address (e.g., user@example.com)">
                 </div>
 
                 <div>
@@ -39,52 +39,50 @@
 
                 <div>
                     <label class="label">Date of Birth (DD-MM-YYYY)</label>
-                    <input type="text" name="dob" id="dob" required 
-                           class="input input-bordered w-full"
-                           placeholder="31-12-1990"
-                           pattern="(0[1-9]|[12][0-9]|3[01])-(0[1-9]|1[012])-(19|20)\d\d"
-                           title="Enter date in DD-MM-YYYY format (e.g., 31-12-1990)"
-                           oninput="formatDate(this)">
+                    <input type="text" name="dob" id="dob" class="input input-bordered w-full" placeholder="31-12-1990"
+                        pattern="(0[1-9]|[12][0-9]|3[01])-(0[1-9]|1[012])-(19|20)\d\d"
+                        title="Enter date in DD-MM-YYYY format (e.g., 31-12-1990)" oninput="formatDate(this)">
                 </div>
 
                 <div>
                     <label class="label">Country</label>
                     <select name="country" class="select select-bordered w-full">
                         {% for code,label in countries %}
-                            <option value="{{ code }}">{{ label }}</option>
+                        <option value="{{ code }}">{{ label }}</option>
                         {% endfor %}
                     </select>
                 </div>
 
                 <div>
                     <label class="label">State</label>
-                    <input type="text" name="state" required 
-                           class="input input-bordered w-full" placeholder="Enter State">
+                    <input type="text" name="state" class="input input-bordered w-full" placeholder="Enter State">
                 </div>
 
                 <div>
                     <label class="label">City</label>
-                    <input type="text" name="city" required class="input input-bordered w-full">
+                    <input type="text" name="city" class="input input-bordered w-full">
                 </div>
 
                 <div class="md:col-span-2">
                     <label class="label">Address</label>
-                    <textarea name="address" class="textarea textarea-bordered w-full" required placeholder="Enter Full Address details Here"></textarea>
+                    <textarea name="address" class="textarea textarea-bordered w-full" required
+                        placeholder="Enter Full Address details Here"></textarea>
                 </div>
 
                 <div>
                     <label class="label">Customer Photo</label>
-                    <input type="file" name="image" accept="image/*" class="file-input file-input-bordered w-full" required>
+                    <input type="file" name="image" accept="image/*" class="file-input file-input-bordered w-full">
                 </div>
 
                 <div>
                     <label class="label">ID Proof Image</label>
-                    <input type="file" name="id_proof" accept="image/*" class="file-input file-input-bordered w-full" required>
+                    <input type="file" name="id_proof" accept="image/*" class="file-input file-input-bordered w-full">
                 </div>
 
                 <div class="md:col-span-2">
                     <label class="label">ID Proof Document Number</label>
-                    <input type="text" name="id_proof_document_number" class="input input-bordered w-full" required placeholder="Enter Number Printed on the Uploaded ID proof">
+                    <input type="text" name="id_proof_document_number" class="input input-bordered w-full" required
+                        placeholder="Enter Number Printed on the Uploaded ID proof">
                 </div>
 
             </div>
@@ -98,37 +96,42 @@
 
                 <div>
                     <label class="label">Room Number</label>
-                   <input type="text" name="room_number" class="input input-bordered w-full" value="{{room_id}}" readonly>
+                    <input type="text" name="room_number" class="input input-bordered w-full" value="{{room_id}}"
+                        readonly>
                 </div>
 
                 <div>
                     <label class="label">Check-In Date</label>
-                    <input type="text" name="checkin_dt" class="input input-bordered w-full" value="{{checkin_dt}}" readonly>
+                    <input type="text" name="checkin_dt" class="input input-bordered w-full" value="{{checkin_dt}}"
+                        readonly>
                 </div>
 
                 <div>
                     <label class="label">Check-Out Date</label>
-                   <input type="text" name="checkout_dt" class="input input-bordered w-full" value="{{checkout_dt}}" readonly>
+                    <input type="text" name="checkout_dt" class="input input-bordered w-full" value="{{checkout_dt}}"
+                        readonly>
                 </div>
-                
-                                <div>
+
+                <div>
                     <label class="label">Adults count</label>
-                   <input type="text" id="adults" name="adults" class="input input-bordered w-full" value="{{adults}}" readonly>
+                    <input type="text" id="adults" name="adults" class="input input-bordered w-full" value="{{adults}}"
+                        readonly>
                 </div>
-                
-                                <div>
+
+                <div>
                     <label class="label">Children count</label>
-                   <input type="text" name="children" class="input input-bordered w-full" value="{{children}}" readonly>
+                    <input type="text" name="children" class="input input-bordered w-full" value="{{children}}"
+                        readonly>
                 </div>
-                
+
                 <div class="md:col-span-2">
                     <label class="label">Leave your Message Here</label>
                     <textarea name="notes" class="textarea textarea-bordered w-full"></textarea>
                 </div>
-                
-                
+
+
                 <div id="fieldsContainer" class="md:col-span-2">
-                
+
                 </div>
             </div>
         </div>
@@ -166,19 +169,19 @@
 
                 <div>
                     <label class="label"><span class="label-text">Full Name</span></label>
-                    <input type="text" name="person_${i}_name" class="input input-bordered w-full" placeholder="Enter name" required>
+                    <input type="text" name="person_${i}_name" class="input input-bordered w-full" placeholder="Enter name" >
                 </div>
 
                 <div>
                     <label class="label"><span class="label-text">Age</span></label>
                     <input type="number" name="person_${i}_age" min="0" max="120" 
-                           class="input input-bordered w-full" placeholder="Enter age" required
+                           class="input input-bordered w-full" placeholder="Enter age" 
                            oninput="this.value = this.value.replace(/[^0-9]/g, '')">
                 </div>
 
                 <div>
                     <label class="label"><span class="label-text">Unique ID (Aadhaar / Passport)</span></label>
-                    <input type="text" name="person_${i}_id" class="input input-bordered w-full" placeholder="Enter ID" required>
+                    <input type="text" name="person_${i}_id" class="input input-bordered w-full" placeholder="Enter ID" >
                 </div>
 
             </div>
@@ -190,22 +193,22 @@
 
 </script>
 
- <script>
+<script>
     function formatDate(input) {
         let value = input.value.replace(/\D/g, '');
         if (value.length > 8) value = value.slice(0, 8);
-        
+
         let formattedValue = '';
         if (value.length > 0) {
             let day = value.slice(0, 2);
             if (parseInt(day) > 31) day = '31';
             formattedValue = day;
-            
+
             if (value.length > 2) {
                 let month = value.slice(2, 4);
                 if (parseInt(month) > 12) month = '12';
                 formattedValue += '-' + month;
-                
+
                 if (value.length > 4) {
                     formattedValue += '-' + value.slice(4, 8);
                 }

@@ -455,18 +455,18 @@ def create_booking(request):
         # 1. Create customer
         num_persons = int(request.POST.get("adults"))
         customer = Customer.objects.create(
-            first_name=request.POST["first_name"],
-            last_name=request.POST["last_name"],
-            email=request.POST["email"],
-            phone=request.POST["phone"],
-            dob=request.POST["dob"],
-            country=request.POST["country"],
-            state=request.POST["state"],
-            city=request.POST["city"],
-            address=request.POST["address"],
-            id_proof_document_number=request.POST["id_proof_document_number"],
-            image=request.FILES.get("image"),
-            id_proof=request.FILES.get("id_proof"),
+            first_name=request.POST.get("first_name", ""),
+            last_name=request.POST.get("last_name", ""),
+            email=request.POST.get("email") or None,
+            phone=request.POST.get("phone", ""),
+            dob=request.POST.get("dob") or None,
+            country=request.POST.get("country") or "Other",
+            state=request.POST.get("state") or "Other",
+            city=request.POST.get("city") or "Other",
+            address=request.POST.get("address", ""),
+            id_proof_document_number=request.POST.get("id_proof_document_number", ""),
+            image=request.FILES.get("image") or None,
+            id_proof=request.FILES.get("id_proof") or None,
         )
 
         # 2. Create booking

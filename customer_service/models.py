@@ -82,21 +82,23 @@ class Customer(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     first_name = models.CharField(max_length=100,null=False,)
     last_name = models.CharField(max_length=100,null=False,)
-    email = models.EmailField(unique=True,null=False)
+    email = models.EmailField(unique=True, null=True, blank=True)
     phone = models.CharField(max_length=20, null=False, db_index=True)
-    dob = models.CharField(help_text="Enter in DD-MM-YYYY format",max_length=10)
-    country = models.CharField(max_length=100, choices=COUNTRY_CHOICES, default="Other", blank=False, null=False)
-    state = models.CharField(max_length=100, choices=INDIAN_STATE_CHOICES, default="Other",blank=False, null=False)
-    city = models.CharField(max_length=100,null=False,default="Other")
+    dob = models.CharField(help_text="Enter in DD-MM-YYYY format", max_length=10, null=True, blank=True)
+    country = models.CharField(max_length=100, choices=COUNTRY_CHOICES, default="Other", blank=True, null=True)
+    state = models.CharField(max_length=100, choices=INDIAN_STATE_CHOICES, default="Other", blank=True, null=True)
+    city = models.CharField(max_length=100, null=True, blank=True, default="Other")
     address = models.TextField(null=False)
     # New fields for photos
     image = models.ImageField(
         upload_to='customers/photos/',
-        help_text="Customer's face photo"
+        help_text="Customer's face photo",
+        null=True, blank=True
     )
     id_proof = models.ImageField(
         upload_to='customers/id_proofs/',
-        help_text="Photo of customer's ID proof (e.g., passport, license)"
+        help_text="Photo of customer's ID proof (e.g., passport, license)",
+        null=True, blank=True
     )
     id_proof_document_number = models.CharField(max_length=200,null=False,default="")
     created_at = models.DateTimeField(auto_now_add=True)
