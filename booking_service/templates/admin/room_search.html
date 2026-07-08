@@ -10,6 +10,7 @@
     ← Go Back
 </button></h2>
   </div>
+  {% if rooms %}
   <div class="grid md:grid-cols-3 gap-8 px-8 lg:px-20">
   {% for room in rooms %}
 <div class="card bg-base-100 shadow-xl rounded-2xl">
@@ -48,7 +49,9 @@
             </ul>
         </div>
 
-         <form action="{% url 'create_booking' %}" method="get">
+         <form action="{% url 'create_booking' %}" method="post">
+        {% csrf_token %}
+        <input type="hidden" name="init_booking" value="true">
         <input type="hidden" name="room_id" value="{{ room.id }}">
         <input type="hidden" name="checkin_dt" value="{{ checkin_dt }}">
         <input type="hidden" name="checkout_dt" value="{{ checkout_dt }}">
@@ -63,6 +66,28 @@
 </div>
 {% endfor %}
   </div>
+  {% else %}
+  <div id="no-rooms-alert" class="flex justify-center px-8 lg:px-20 my-10 transition-opacity duration-1000">
+      <div class="alert alert-warning shadow-lg">
+          <div>
+              <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current flex-shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
+              <span>Rooms not available for booking for the selected date. Please select different dates or contact hotel admin.</span>
+          </div>
+      </div>
+  </div>
+  
+  <script>
+      setTimeout(function() {
+          var alertBox = document.getElementById("no-rooms-alert");
+          if (alertBox) {
+              alertBox.style.opacity = "0";
+              setTimeout(function() {
+                  alertBox.style.display = "none";
+              }, 1000); // Wait for the transition to finish before hiding
+          }
+      }, 5000); // 5 seconds duration
+  </script>
+  {% endif %}
 </section>
 {% include "admin/about.html" %}
 {% include "admin/contact.html" %}

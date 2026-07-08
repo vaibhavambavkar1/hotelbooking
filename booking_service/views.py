@@ -416,10 +416,16 @@ def sample(request):
 
 def search_rooms(request):
     context={}
-    checkin = request.GET.get("checkin")
-    checkout = request.GET.get("checkout")
-    adults= request.GET.get("adults")
-    children= request.GET.get("children")
+    if request.method == "POST":
+        checkin = request.POST.get("checkin")
+        checkout = request.POST.get("checkout")
+        adults= request.POST.get("adults")
+        children= request.POST.get("children")
+    else:
+        checkin = request.GET.get("checkin")
+        checkout = request.GET.get("checkout")
+        adults= request.GET.get("adults")
+        children= request.GET.get("children")
 
     available_rooms = Room.objects.all()
 
@@ -439,6 +445,9 @@ def search_rooms(request):
             has_overlap=Exists(overlapping)
         ).filter(has_overlap=False).select_related("room_type").prefetch_related("photos","room_type__amenities")                   # load all room photos
 
+        if not available_rooms.exists():
+            messages.warning(request, "Rooms not available for booking for the selected date. Please select different dates or contact hotel admin.")
+
         context = {
             "rooms": available_rooms,
             "checkin_dt":checkin,
@@ -452,6 +461,16 @@ def search_rooms(request):
 @transaction.atomic
 def create_booking(request):
     if request.method == "POST":
+        if request.POST.get("init_booking"):
+            request.session['booking_data'] = {
+                "checkin_dt": request.POST.get("checkin_dt"),
+                "checkout_dt": request.POST.get("checkout_dt"),
+                "room_id": request.POST.get("room_id"),
+                "adults": request.POST.get("adults"),
+                "children": request.POST.get("children"),
+            }
+            return redirect("create_booking")
+            
         room_number = request.POST.get("room_number")
         if not Room.objects.filter(id=room_number).exists():
             messages.error(request, f"Error: Room '{room_number}' does not exist in the system.")
@@ -544,11 +563,12 @@ def create_booking(request):
         return redirect(request.get_full_path())
 
     else:
-        checkin_dt=request.GET.get("checkin_dt")
-        checkout_dt=request.GET.get("checkout_dt")
-        room_id=request.GET.get("room_id")
-        adults = request.GET.get("adults")
-        children = request.GET.get("children")
+        booking_data = request.session.get('booking_data', {})
+        checkin_dt = booking_data.get("checkin_dt") or request.GET.get("checkin_dt")
+        checkout_dt = booking_data.get("checkout_dt") or request.GET.get("checkout_dt")
+        room_id = booking_data.get("room_id") or request.GET.get("room_id")
+        adults = booking_data.get("adults") or request.GET.get("adults")
+        children = booking_data.get("children") or request.GET.get("children")
         
         context={
             "countries": Customer.COUNTRY_CHOICES,
