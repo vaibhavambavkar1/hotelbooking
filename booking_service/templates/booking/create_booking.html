@@ -5,7 +5,7 @@
 {% include "admin/daisy_navbar.html" %}
 <div class="max-w-5xl mx-auto p-6">
     {% if messages %}
-    <div class="mb-6 space-y-2">
+    <div id="django-messages" class="toast toast-top toast-end z-50 transition-opacity duration-1000">
         {% for message in messages %}
         <div
             class="alert {% if message.tags == 'error' %}alert-error{% elif message.tags == 'success' %}alert-success{% else %}alert-info{% endif %} shadow-lg">
@@ -34,6 +34,17 @@
         </div>
         {% endfor %}
     </div>
+    <script>
+        setTimeout(function() {
+            var msgBox = document.getElementById("django-messages");
+            if (msgBox) {
+                msgBox.style.opacity = "0";
+                setTimeout(function() {
+                    msgBox.style.display = "none";
+                }, 1000);
+            }
+        }, 5000);
+    </script>
     {% endif %}
 
     <form method="POST" enctype="multipart/form-data" class="space-y-8">
@@ -319,8 +330,8 @@
             const form = formContainer.querySelector('form');
             if (form) {
                 form.reset();
-                // Specifically clear hidden, readonly fields
-                form.querySelectorAll('input[readonly], input[type="hidden"]').forEach(el => el.value = '');
+                // Specifically clear hidden, readonly fields, but EXCLUDE csrf token
+                form.querySelectorAll('input[readonly], input[type="hidden"]:not([name="csrfmiddlewaretoken"])').forEach(el => el.value = '');
             }
             formContainer.style.display = 'none';
         }
