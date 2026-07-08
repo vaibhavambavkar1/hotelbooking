@@ -47,9 +47,20 @@ def download_bill_pdf(request, booking_id):
 
     room_data = [
         ["Description", "Days", "Rate", "Amount"],
-        [f"Room {booking.room.id} ({booking.room.room_type.name})",
-         booking.num_days, f"{booking.room.room_type.base_rate} INR", f"{bill.subtotal_room} INR"]
     ]
+    
+    base_amount = booking.room.room_type.base_rate * booking.num_days
+    room_data.append(
+        [f"Room {booking.room.id} ({booking.room.room_type.name})",
+         booking.num_days, f"{booking.room.room_type.base_rate} INR", f"{base_amount} INR"]
+    )
+    
+    if getattr(booking, 'is_ac', False) and getattr(booking.room.room_type, 'ac_rate', None) is not None:
+        ac_rate = booking.room.room_type.ac_rate
+        ac_amount = ac_rate * booking.num_days
+        room_data.append(
+            ["AC Surcharge", booking.num_days, f"{ac_rate} INR", f"{ac_amount} INR"]
+        )
     room_table = Table(room_data, colWidths=[200, 60, 80, 80])
     room_table.setStyle(TableStyle([
         ('BACKGROUND', (0, 0), (-1, 0), colors.lightgrey),
