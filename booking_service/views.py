@@ -457,23 +457,44 @@ def create_booking(request):
             messages.error(request, f"Error: Room '{room_number}' does not exist in the system.")
             return redirect(request.get_full_path())
         
-        # 1. Create customer
+        # 1. Create or Update customer
         adults_str = request.POST.get("adults")
         num_persons = int(adults_str) if adults_str and adults_str.isdigit() else 1
-        customer = Customer.objects.create(
-            first_name=request.POST.get("first_name", ""),
-            last_name=request.POST.get("last_name", ""),
-            email=request.POST.get("email") or None,
-            phone=request.POST.get("phone", ""),
-            dob=request.POST.get("dob") or None,
-            country=request.POST.get("country") or "Other",
-            state=request.POST.get("state") or "Other",
-            city=request.POST.get("city") or "Other",
-            address=request.POST.get("address", ""),
-            id_proof_document_number=request.POST.get("id_proof_document_number", ""),
-            image=request.FILES.get("image") or None,
-            id_proof=request.FILES.get("id_proof") or None,
-        )
+        
+        email = request.POST.get("email") or None
+        phone = request.POST.get("phone", "")
+        
+        customer_data = {
+            "first_name": request.POST.get("first_name", ""),
+            "last_name": request.POST.get("last_name", ""),
+            "phone": phone,
+            "dob": request.POST.get("dob") or None,
+            "country": request.POST.get("country") or "Other",
+            "state": request.POST.get("state") or "Other",
+            "city": request.POST.get("city") or "Other",
+            "address": request.POST.get("address", ""),
+            "id_proof_document_number": request.POST.get("id_proof_document_number", ""),
+        }
+        
+        if request.FILES.get("image"):
+            customer_data["image"] = request.FILES.get("image")
+        if request.FILES.get("id_proof"):
+            customer_data["id_proof"] = request.FILES.get("id_proof")
+            
+        if email:
+            customer, _ = Customer.objects.update_or_create(
+                email=email,
+                defaults=customer_data
+            )
+        else:
+            existing_customer = Customer.objects.filter(phone=phone).first() if phone else None
+            if existing_customer:
+                for key, value in customer_data.items():
+                    setattr(existing_customer, key, value)
+                existing_customer.save()
+                customer = existing_customer
+            else:
+                customer = Customer.objects.create(email=None, **customer_data)
 
         # 2. Create booking
         # Helper to parse different date formats
