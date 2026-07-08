@@ -17,6 +17,7 @@ class Booking(models.Model):
     checkin_date = models.DateField(null=True, blank=True,db_index=True)
     checkout_date = models.DateField(null=True, blank=True,db_index=True)
     total_amount = models.DecimalField(max_digits=10, decimal_places=2, default=0.0,null=True, blank=True)
+    is_ac = models.BooleanField(default=False, help_text="Did the customer opt for AC?")
     notes = models.TextField(blank=True, null=True)
     num_days = models.PositiveIntegerField(editable=False, default=1)
     created_at = models.DateTimeField(auto_now_add=True)

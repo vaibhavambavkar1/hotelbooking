@@ -515,11 +515,13 @@ def create_booking(request):
             messages.error(request, str(e))
             return redirect(request.get_full_path())
             
+        is_ac = request.POST.get("is_ac") == "on"
         booking = Booking.objects.create(
             customer=customer,
             room_id=request.POST["room_number"],
             checkin_date=checkin_d,
             checkout_date=checkout_d,
+            is_ac=is_ac,
             notes=request.POST.get("notes", ""),
             booking_status=Booking.BookingStatus.RESERVED
         )
@@ -539,7 +541,7 @@ def create_booking(request):
                 )
         messages.success(request, "Booking created successfully!")
         request.session['new_booking_id'] = str(booking.id)
-        return redirect("advertisement")
+        return redirect(request.get_full_path())
 
     else:
         checkin_dt=request.GET.get("checkin_dt")
@@ -547,13 +549,25 @@ def create_booking(request):
         room_id=request.GET.get("room_id")
         adults = request.GET.get("adults")
         children = request.GET.get("children")
-        context={}
-        countries= Customer.COUNTRY_CHOICES
-        cities=Customer.INDIAN_STATE_CHOICES
-        context={"countries":countries,"cities":cities,"checkin_dt":checkin_dt,
-            "checkout_dt":checkout_dt,"room_id":room_id,"adults": adults,
-            "children":children,}
-        return render(request, "booking/create_booking.html",context)
+        
+        context={
+            "countries": Customer.COUNTRY_CHOICES,
+            "cities": Customer.INDIAN_STATE_CHOICES,
+            "checkin_dt": checkin_dt,
+            "checkout_dt": checkout_dt,
+            "room_id": room_id,
+            "adults": adults,
+            "children": children,
+        }
+        
+        new_booking_id = request.session.pop('new_booking_id', None)
+        if new_booking_id:
+            try:
+                context['new_booking'] = Booking.objects.get(id=new_booking_id)
+            except Booking.DoesNotExist:
+                pass
+                
+        return render(request, "booking/create_booking.html", context)
 
 def save_contact_message(request):
     name=request.POST.get("name")
