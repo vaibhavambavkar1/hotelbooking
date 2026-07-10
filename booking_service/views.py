@@ -49,18 +49,17 @@ def download_bill_pdf(request, booking_id):
         ["Description", "Days", "Rate", "Amount"],
     ]
     
-    base_amount = booking.room.room_type.base_rate * booking.num_days
-    room_data.append(
-        [f"Room {booking.room.id} ({booking.room.room_type.name})",
-         booking.num_days, f"{booking.room.room_type.base_rate} INR", f"{base_amount} INR"]
-    )
-    
     if getattr(booking, 'is_ac', False) and getattr(booking.room.room_type, 'ac_rate', None) is not None:
-        ac_rate = booking.room.room_type.ac_rate
-        ac_amount = ac_rate * booking.num_days
-        room_data.append(
-            ["AC Surcharge", booking.num_days, f"{ac_rate} INR", f"{ac_amount} INR"]
-        )
+        room_rate = booking.room.room_type.ac_rate
+        room_name = f"Room {booking.room.id} ({booking.room.room_type.name} - AC)"
+    else:
+        room_rate = booking.room.room_type.base_rate
+        room_name = f"Room {booking.room.id} ({booking.room.room_type.name})"
+
+    room_amount = room_rate * booking.num_days
+    room_data.append(
+        [room_name, booking.num_days, f"{room_rate} INR", f"{room_amount} INR"]
+    )
     room_table = Table(room_data, colWidths=[200, 60, 80, 80])
     room_table.setStyle(TableStyle([
         ('BACKGROUND', (0, 0), (-1, 0), colors.lightgrey),
@@ -211,15 +210,22 @@ def checkout_room(request, booking_id):
             return redirect(reverse("admin:booking_service_booking_change", args=[booking.id]))
 
         today = timezone.localdate()
+        is_early_checkout = False
         # Case: Too early (optional - usually hotels allow early checkout, but we follow existing logic)
         if today < booking.checkout_date:
+            is_early_checkout = True
             messages.warning(
                 request,
                 f"Note: Early Check-Out. Planned date was {booking.checkout_date}."
             )
+            # Temporarily adjust booking checkout_date and num_days in memory for correct calculation & preview
+            booking.checkout_date = today
+            if booking.checkin_date:
+                booking.num_days = max((today - booking.checkin_date).days, 1)
 
         # Get or Create FinalBill to show preview
         bill, created = FinalBill.objects.get_or_create(booking=booking)
+        bill.booking = booking
         bill.calculate_totals() # Refresh totals based on current room days and services
 
         if request.method == "POST":
@@ -230,6 +236,10 @@ def checkout_room(request, booking_id):
             except:
                 bill.discount = Decimal("0.00")
             
+            # If early checkout, save the new checkout_date and num_days
+            if is_early_checkout:
+                booking.save(update_fields=["checkout_date", "num_days"], skip_status_update=True)
+
             # 2. Finalize Bill
             bill.save() # This calls calculate_totals() internally which applies discount
 

@@ -14,8 +14,8 @@ class RoomType(models.Model):
     name = models.CharField(max_length=50)  # e.g., Deluxe, Suite
     description = models.TextField(blank=True)
     capacity = models.IntegerField()  # guests
-    base_rate = models.DecimalField(max_digits=10, decimal_places=2, help_text="Non-AC Rate per person")
-    ac_rate = models.DecimalField(max_digits=10, decimal_places=2, help_text="AC Rate per person", null=True, blank=True)
+    base_rate = models.DecimalField(max_digits=10, decimal_places=2, help_text="Non-AC Rate")
+    ac_rate = models.DecimalField(max_digits=10, decimal_places=2, help_text="AC Rate", null=True, blank=True)
     amenities = models.ManyToManyField('Amenity', related_name='rooms', blank=True)
 
     def __str__(self):

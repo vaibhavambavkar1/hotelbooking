@@ -24,12 +24,17 @@ class FinalBill(models.Model):
     def calculate_totals(self):
         base_rate = getattr(self.booking.room.room_type, 'base_rate', Decimal('0.00'))
         if getattr(self.booking, 'is_ac', False) and getattr(self.booking.room.room_type, 'ac_rate', None) is not None:
-            ac_surcharge = getattr(self.booking.room.room_type, 'ac_rate', Decimal('0.00'))
-            room_rate = base_rate + ac_surcharge
+            room_rate = getattr(self.booking.room.room_type, 'ac_rate', Decimal('0.00'))
         else:
             room_rate = base_rate
             
-        room_days = getattr(self.booking, 'num_days', 1)
+        checkin_date = getattr(self.booking, 'checkin_date', None)
+        checkout_date = getattr(self.booking, 'checkout_date', None)
+        if checkin_date and checkout_date:
+            room_days = max((checkout_date - checkin_date).days, 1)
+        else:
+            room_days = getattr(self.booking, 'num_days', 1)
+
         self.subtotal_room = room_rate * Decimal(room_days)
 
         service_orders = ServiceOrder.objects.filter(
