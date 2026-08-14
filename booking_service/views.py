@@ -91,6 +91,7 @@ def download_bill_pdf(request, booking_id):
         ["Room Total", f"{bill.subtotal_room} INR"],
         ["Service Total", f"{bill.subtotal_services} INR"],
         ["Tax", f"{bill.tax} INR"],
+        ["Additional Charges", f"{bill.additional_charges} INR"],
         ["Discount", f"- {bill.discount} INR"],
         ["Total Payable", f"{bill.total} INR"]
     ]
@@ -235,6 +236,13 @@ def checkout_room(request, booking_id):
                 bill.discount = Decimal(discount_amount)
             except:
                 bill.discount = Decimal("0.00")
+
+            # Update Additional Charges from POST data
+            additional_charges_amount = request.POST.get("additional_charges", "0")
+            try:
+                bill.additional_charges = Decimal(additional_charges_amount)
+            except:
+                bill.additional_charges = Decimal("0.00")
             
             # If early checkout, save the new checkout_date and num_days
             if is_early_checkout:
