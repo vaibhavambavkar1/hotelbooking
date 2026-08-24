@@ -1,6 +1,6 @@
 
 from django.urls import path
-from .views import download_bill_pdf,booking_calendar,booking_events,cancel_reservation,checkout_room,checkin_room,advertisement,availability_calendar,sample,search_rooms,create_booking,save_contact_message
+from .views import download_bill_pdf,booking_calendar,booking_events,cancel_reservation,checkout_room,checkin_room,advertisement,availability_calendar,sample,search_rooms,create_booking,save_contact_message,transfer_room,toggle_ac
 from .services import room_dashboard
 
 
@@ -16,6 +16,8 @@ urlpatterns = [
     path("availability_calendar", availability_calendar, name="availability-calendar"),
     path("create_booking",create_booking,name="create_booking"),
     path("sample",search_rooms,name="sample"),
-path("save_contact_message",save_contact_message,name="save_contact_message")
+    path("save_contact_message",save_contact_message,name="save_contact_message"),
+    path("transfer_room/<uuid:booking_id>/", transfer_room, name="transfer_room"),
+    path("toggle_ac/<uuid:booking_id>/", toggle_ac, name="toggle_ac"),
 
 ]

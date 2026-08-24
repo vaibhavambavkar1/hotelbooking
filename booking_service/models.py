@@ -3,6 +3,7 @@ from django.core.exceptions import ValidationError
 import uuid
 from room_service.models import Room
 from django.utils import timezone
+from decimal import Decimal
 
 class Booking(models.Model):
     class BookingStatus(models.TextChoices):
@@ -13,7 +14,7 @@ class Booking(models.Model):
         CANCELLED = "cancelled","cancelled"
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     customer = models.ForeignKey('customer_service.Customer', on_delete=models.CASCADE, related_name='bookings',null=False)
-    room = models.ForeignKey(Room, on_delete=models.PROTECT, related_name='bookings',null=False,limit_choices_to={'status': Room.Status.AVAILABLE})
+    room = models.ForeignKey(Room, on_delete=models.PROTECT, related_name='bookings',null=False)
     checkin_date = models.DateField(null=True, blank=True,db_index=True)
     checkout_date = models.DateField(null=True, blank=True,db_index=True)
     total_amount = models.DecimalField(max_digits=10, decimal_places=2, default=0.0,null=True, blank=True)
@@ -60,6 +61,7 @@ class Booking(models.Model):
 
     def save(self, *args, **kwargs):
         skip_status_update = kwargs.pop('skip_status_update', False)
+        is_new = self._state.adding
         if not skip_status_update:
             if self.checkin_date and self.checkout_date:
                 self.num_days = max((self.checkout_date - self.checkin_date).days, 1)
@@ -79,6 +81,19 @@ class Booking(models.Model):
 
                 if self.booking_status != new_booking_status:
                     type(self).objects.filter(pk=self.pk).update(booking_status=new_booking_status)
+
+                # Auto-create initial booking segment for new bookings
+                if is_new and self.checkin_date:
+                    BookingSegment.objects.get_or_create(
+                        booking=self,
+                        start_date=self.checkin_date,
+                        defaults={
+                            'room': self.room,
+                            'is_ac': self.is_ac,
+                            'end_date': None,
+                            'reason': 'Initial booking',
+                        }
+                    )
         else:
             with transaction.atomic():
                 super().save(*args, **kwargs)
@@ -96,6 +111,48 @@ class Guest(models.Model):
 
     def __str__(self):
         return f"{self.name} ({self.age})"
+
+
+class BookingSegment(models.Model):
+    """Tracks each phase of a booking where room or AC preference changes."""
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    booking = models.ForeignKey(Booking, on_delete=models.CASCADE, related_name='segments')
+    room = models.ForeignKey(Room, on_delete=models.PROTECT, related_name='booking_segments')
+    is_ac = models.BooleanField(default=False)
+    start_date = models.DateField()
+    end_date = models.DateField(null=True, blank=True)  # null = ongoing (current segment)
+    reason = models.CharField(max_length=255, blank=True, default="")
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['start_date', 'created_at']
+        verbose_name = "Booking Segment"
+        verbose_name_plural = "Booking Segments"
+
+    def __str__(self):
+        ac_label = "AC" if self.is_ac else "Non-AC"
+        end = self.end_date or "ongoing"
+        return f"Room {self.room.id} ({ac_label}) : {self.start_date} → {end}"
+
+    @property
+    def days(self):
+        """Number of days in this segment."""
+        end = self.end_date or self.booking.checkout_date
+        if end and self.start_date:
+            return max((end - self.start_date).days, 0)
+        return 0
+
+    @property
+    def rate(self):
+        """Per-day rate for this segment based on room type and AC preference."""
+        if self.is_ac and self.room.room_type.ac_rate:
+            return self.room.room_type.ac_rate
+        return self.room.room_type.base_rate
+
+    @property
+    def amount(self):
+        """Total amount for this segment."""
+        return self.rate * Decimal(max(self.days, 1))
 
 
 class ContactMessage(models.Model):

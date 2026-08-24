@@ -23,21 +23,44 @@ class FinalBill(models.Model):
 
 
     def calculate_totals(self):
-        base_rate = getattr(self.booking.room.room_type, 'base_rate', Decimal('0.00'))
-        if getattr(self.booking, 'is_ac', False) and getattr(self.booking.room.room_type, 'ac_rate', None) is not None:
-            room_rate = getattr(self.booking.room.room_type, 'ac_rate', Decimal('0.00'))
-        else:
-            room_rate = base_rate
-            
-        checkin_date = getattr(self.booking, 'checkin_date', None)
-        checkout_date = getattr(self.booking, 'checkout_date', None)
-        if checkin_date and checkout_date:
-            room_days = max((checkout_date - checkin_date).days, 1)
-        else:
-            room_days = getattr(self.booking, 'num_days', 1)
+        segments = self.booking.segments.all().order_by('start_date')
 
-        self.subtotal_room = room_rate * Decimal(room_days)
+        if segments.exists():
+            # --- SEGMENT-BASED BILLING ---
+            subtotal_room = Decimal('0.00')
+            for seg in segments:
+                end = seg.end_date or self.booking.checkout_date
+                if end and seg.start_date:
+                    days = max((end - seg.start_date).days, 1)
+                else:
+                    days = 1
 
+                if seg.is_ac and seg.room.room_type.ac_rate:
+                    rate = seg.room.room_type.ac_rate
+                else:
+                    rate = seg.room.room_type.base_rate
+
+                subtotal_room += rate * Decimal(days)
+
+            self.subtotal_room = subtotal_room
+        else:
+            # --- LEGACY FALLBACK (no segments = old booking) ---
+            base_rate = getattr(self.booking.room.room_type, 'base_rate', Decimal('0.00'))
+            if getattr(self.booking, 'is_ac', False) and getattr(self.booking.room.room_type, 'ac_rate', None) is not None:
+                room_rate = getattr(self.booking.room.room_type, 'ac_rate', Decimal('0.00'))
+            else:
+                room_rate = base_rate
+
+            checkin_date = getattr(self.booking, 'checkin_date', None)
+            checkout_date = getattr(self.booking, 'checkout_date', None)
+            if checkin_date and checkout_date:
+                room_days = max((checkout_date - checkin_date).days, 1)
+            else:
+                room_days = getattr(self.booking, 'num_days', 1)
+
+            self.subtotal_room = room_rate * Decimal(room_days)
+
+        # Services, tax, total — unchanged
         service_orders = ServiceOrder.objects.filter(
             booking_id=self.booking.id,
         )

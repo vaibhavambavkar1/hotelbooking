@@ -5,7 +5,7 @@ from reportlab.lib import colors
 from reportlab.lib.pagesizes import A4
 from reportlab.lib.styles import getSampleStyleSheet
 from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
-from .models import Booking,Guest,ContactMessage
+from .models import Booking,Guest,ContactMessage,BookingSegment
 from django.shortcuts import render, get_object_or_404,redirect,reverse
 from django.contrib import messages
 from django.db import transaction
@@ -26,6 +26,7 @@ def download_bill_pdf(request, booking_id):
 
     service_order_items = ServiceOrderItem.objects.filter(order__booking=booking_id)
     booking = bill.booking
+    segments = booking.segments.all().order_by('start_date')
 
     response = HttpResponse(content_type="application/pdf")
     response["Content-Disposition"] = f'attachment; filename="bill_{booking.id}.pdf"'
@@ -45,22 +46,38 @@ def download_bill_pdf(request, booking_id):
     story.append(Paragraph(f"<b>Check-out:</b> {booking.checkout_date}", styles['Normal']))
     story.append(Spacer(1, 12))
 
-    room_data = [
-        ["Description", "Days", "Rate", "Amount"],
-    ]
-    
-    if getattr(booking, 'is_ac', False) and getattr(booking.room.room_type, 'ac_rate', None) is not None:
-        room_rate = booking.room.room_type.ac_rate
-        room_name = f"Room {booking.room.id} ({booking.room.room_type.name} - AC)"
+    # Room charges — segment-wise or single row
+    if segments.exists():
+        room_data = [
+            ["Room", "AC/Non-AC", "Days", "Rate", "Amount"],
+        ]
+        for seg in segments:
+            ac_label = "AC" if seg.is_ac else "Non-AC"
+            room_name = f"Room {seg.room.id} ({seg.room.room_type.name})"
+            seg_days = max(seg.days, 1)
+            seg_rate = seg.rate
+            seg_amount = seg.amount
+            room_data.append(
+                [room_name, ac_label, seg_days, f"{seg_rate} INR", f"{seg_amount} INR"]
+            )
+        room_table = Table(room_data, colWidths=[160, 70, 50, 80, 80])
     else:
-        room_rate = booking.room.room_type.base_rate
-        room_name = f"Room {booking.room.id} ({booking.room.room_type.name})"
+        room_data = [
+            ["Description", "Days", "Rate", "Amount"],
+        ]
+        if getattr(booking, 'is_ac', False) and getattr(booking.room.room_type, 'ac_rate', None) is not None:
+            room_rate = booking.room.room_type.ac_rate
+            room_name = f"Room {booking.room.id} ({booking.room.room_type.name} - AC)"
+        else:
+            room_rate = booking.room.room_type.base_rate
+            room_name = f"Room {booking.room.id} ({booking.room.room_type.name})"
 
-    room_amount = room_rate * booking.num_days
-    room_data.append(
-        [room_name, booking.num_days, f"{room_rate} INR", f"{room_amount} INR"]
-    )
-    room_table = Table(room_data, colWidths=[200, 60, 80, 80])
+        room_amount = room_rate * booking.num_days
+        room_data.append(
+            [room_name, booking.num_days, f"{room_rate} INR", f"{room_amount} INR"]
+        )
+        room_table = Table(room_data, colWidths=[200, 60, 80, 80])
+
     room_table.setStyle(TableStyle([
         ('BACKGROUND', (0, 0), (-1, 0), colors.lightgrey),
         ('GRID', (0, 0), (-1, -1), 0.5, colors.grey),
@@ -224,10 +241,32 @@ def checkout_room(request, booking_id):
             if booking.checkin_date:
                 booking.num_days = max((today - booking.checkin_date).days, 1)
 
+        # Close the current (last open) booking segment
+        open_segment = booking.segments.filter(end_date__isnull=True).first()
+        if open_segment:
+            open_segment.end_date = booking.checkout_date
+            open_segment.save(update_fields=['end_date'])
+
         # Get or Create FinalBill to show preview
         bill, created = FinalBill.objects.get_or_create(booking=booking)
         bill.booking = booking
         bill.calculate_totals() # Refresh totals based on current room days and services
+
+        # Build segment data for template
+        segments = booking.segments.all().order_by('start_date')
+        segment_data = []
+        for seg in segments:
+            seg_days = max(seg.days, 1)
+            segment_data.append({
+                'room': seg.room,
+                'is_ac': seg.is_ac,
+                'ac_label': 'AC' if seg.is_ac else 'Non-AC',
+                'start_date': seg.start_date,
+                'end_date': seg.end_date,
+                'days': seg_days,
+                'rate': seg.rate,
+                'amount': seg.amount,
+            })
 
         if request.method == "POST":
             # 1. Update Discount from POST data
@@ -269,6 +308,8 @@ def checkout_room(request, booking_id):
         context = {
             "booking": booking,
             "bill": bill,
+            "segments": segment_data,
+            "has_segments": len(segment_data) > 0,
             "title": f"Checkout - {booking.customer}",
             "today": today,
         }
@@ -627,3 +668,167 @@ def save_contact_message(request):
     messages.success(request, "Message Sent successfully!")
     return redirect("advertisement")
 
+
+@staff_member_required
+@transaction.atomic
+def transfer_room(request, booking_id):
+    """Transfer a booking to a different room, optionally changing AC preference."""
+    booking = get_object_or_404(Booking, id=booking_id)
+
+    # Validate booking status
+    if booking.booking_status not in [Booking.BookingStatus.CHECKIN, Booking.BookingStatus.RESERVED]:
+        messages.error(request, f"Cannot transfer room for booking with status '{booking.get_booking_status_display()}'.")
+        return redirect(reverse("admin:booking_service_booking_changelist"))
+
+    today = timezone.localdate()
+    remaining_start = max(today, booking.checkin_date) if booking.checkin_date else today
+
+    # Find available rooms for the remaining dates
+    overlapping = Booking.objects.filter(
+        room_id=OuterRef("id"),
+        checkin_date__lt=booking.checkout_date,
+        checkout_date__gt=remaining_start,
+    ).exclude(
+        booking_status__in=["cancelled", "checkout"]
+    ).exclude(id=booking.id)
+
+    available_rooms = Room.objects.exclude(
+        id=booking.room_id
+    ).exclude(
+        status="maintenance"
+    ).annotate(
+        has_overlap=Exists(overlapping)
+    ).filter(has_overlap=False).select_related("room_type")
+
+    if request.method == "POST":
+        new_room_id = request.POST.get("new_room")
+        new_is_ac = request.POST.get("is_ac") == "on"
+        reason = request.POST.get("reason", "").strip()
+
+        if not new_room_id:
+            messages.error(request, "Please select a room to transfer to.")
+            return redirect(reverse("transfer_room", args=[booking.id]))
+
+        new_room = get_object_or_404(Room, id=new_room_id)
+
+        # Validate the new room is in the available list
+        if not available_rooms.filter(id=new_room_id).exists():
+            messages.error(request, f"Room {new_room_id} is not available for the remaining dates.")
+            return redirect(reverse("transfer_room", args=[booking.id]))
+
+        # 1. Close the current segment
+        open_segment = booking.segments.filter(end_date__isnull=True).first()
+        if open_segment:
+            open_segment.end_date = remaining_start
+            open_segment.save(update_fields=['end_date'])
+
+        # 2. Create new segment
+        BookingSegment.objects.create(
+            booking=booking,
+            room=new_room,
+            is_ac=new_is_ac,
+            start_date=remaining_start,
+            end_date=None,
+            reason=reason or f"Transferred from Room {booking.room.id}",
+        )
+
+        # 3. Update old room status
+        old_room = booking.room
+        # Check if old room has other active bookings right now
+        other_active = Booking.objects.filter(
+            room=old_room,
+            booking_status__in=[Booking.BookingStatus.CHECKIN, Booking.BookingStatus.RESERVED],
+            checkin_date__lte=today,
+            checkout_date__gt=today,
+        ).exclude(id=booking.id).exists()
+        if not other_active:
+            old_room.status = Room.Status.AVAILABLE
+            old_room.save(update_fields=["status"])
+
+        # 4. Update booking to point to new room
+        booking.room = new_room
+        booking.is_ac = new_is_ac
+        booking.save(update_fields=["room", "is_ac"], skip_status_update=True)
+
+        # 5. Update new room status
+        if booking.booking_status == Booking.BookingStatus.CHECKIN:
+            new_room.status = Room.Status.OCCUPIED
+        else:
+            new_room.status = Room.Status.RESERVED
+        new_room.save(update_fields=["status"])
+
+        ac_label = "AC" if new_is_ac else "Non-AC"
+        messages.success(
+            request,
+            f"Booking transferred from Room {old_room.id} to Room {new_room.id} ({ac_label}). "
+            f"Reason: {reason or 'N/A'}"
+        )
+        return redirect(reverse("admin:booking_service_booking_changelist"))
+
+    # GET: Show transfer form
+    # Build segment history for display
+    segments = booking.segments.all().order_by('start_date')
+
+    context = {
+        "booking": booking,
+        "available_rooms": available_rooms,
+        "segments": segments,
+        "title": f"Transfer Room - {booking.customer}",
+    }
+    context.update(admin.site.each_context(request))
+    return render(request, "booking/transfer_room.html", context)
+
+
+@staff_member_required
+@transaction.atomic
+def toggle_ac(request, booking_id):
+    """Toggle AC preference for a checked-in booking, creating a new billing segment."""
+    booking = get_object_or_404(Booking, id=booking_id)
+
+    if booking.booking_status != Booking.BookingStatus.CHECKIN:
+        messages.error(request, "AC can only be toggled for checked-in bookings.")
+        return redirect(reverse("admin:booking_service_booking_changelist"))
+
+    today = timezone.localdate()
+    new_is_ac = not booking.is_ac
+
+    # 1. Close the current segment
+    open_segment = booking.segments.filter(end_date__isnull=True).first()
+    if open_segment:
+        # Don't create zero-day segments
+        if open_segment.start_date == today:
+            # Same day toggle — just update the existing segment
+            open_segment.is_ac = new_is_ac
+            open_segment.reason = f"AC {'enabled' if new_is_ac else 'disabled'} (same-day update)"
+            open_segment.save(update_fields=['is_ac', 'reason'])
+        else:
+            open_segment.end_date = today
+            open_segment.save(update_fields=['end_date'])
+
+            # 2. Create new segment with flipped AC
+            BookingSegment.objects.create(
+                booking=booking,
+                room=booking.room,
+                is_ac=new_is_ac,
+                start_date=today,
+                end_date=None,
+                reason=f"AC {'enabled' if new_is_ac else 'disabled'}",
+            )
+    else:
+        # No open segment (shouldn't happen, but handle gracefully)
+        BookingSegment.objects.create(
+            booking=booking,
+            room=booking.room,
+            is_ac=new_is_ac,
+            start_date=today,
+            end_date=None,
+            reason=f"AC {'enabled' if new_is_ac else 'disabled'}",
+        )
+
+    # 3. Update booking
+    booking.is_ac = new_is_ac
+    booking.save(update_fields=["is_ac"], skip_status_update=True)
+
+    ac_status = "ON" if new_is_ac else "OFF"
+    messages.success(request, f"AC turned {ac_status} for Room {booking.room.id}. Billing will reflect the change.")
+    return redirect(reverse("admin:booking_service_booking_changelist"))

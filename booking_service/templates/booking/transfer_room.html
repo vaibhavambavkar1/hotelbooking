@@ -1,0 +1,360 @@
+{% extends "admin/base_site.html" %}
+{% load i18n admin_urls static admin_modify %}
+
+{% block extrahead %}{{ block.super }}
+<style>
+    :root {
+        --transfer-bg: #ffffff;
+        --transfer-text: #111827;
+        --card-bg: #f9fafb;
+        --card-border: #e5e7eb;
+        --table-header-bg: #f3f4f6;
+        --accent-purple: #7c3aed;
+        --accent-purple-light: #ede9fe;
+    }
+
+    [data-theme='dark'],
+    .dark-mode,
+    body.dark {
+        --transfer-bg: #1f2937;
+        --transfer-text: #f9fafb;
+        --card-bg: #374151;
+        --card-border: #4b5563;
+        --table-header-bg: #374151;
+        --accent-purple-light: #3b2667;
+    }
+
+    .transfer-container {
+        max-width: 900px;
+        margin: 20px auto;
+        padding: 24px;
+        background: var(--transfer-bg);
+        color: var(--transfer-text);
+        border-radius: 10px;
+        border: 1px solid var(--card-border);
+        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+    }
+
+    .info-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 12px;
+        margin-bottom: 24px;
+        padding: 16px;
+        background: var(--card-bg);
+        border-radius: 8px;
+        border: 1px solid var(--card-border);
+    }
+
+    .info-grid .info-item {
+        display: flex;
+        flex-direction: column;
+    }
+
+    .info-grid .info-label {
+        font-size: 0.8em;
+        opacity: 0.7;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        margin-bottom: 2px;
+    }
+
+    .info-grid .info-value {
+        font-weight: 600;
+        font-size: 1.05em;
+    }
+
+    .section-title {
+        font-size: 1.1em;
+        font-weight: 700;
+        margin: 20px 0 10px;
+        padding-bottom: 6px;
+        border-bottom: 2px solid var(--accent-purple);
+        display: inline-block;
+    }
+
+    .segment-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-bottom: 20px;
+        font-size: 0.95em;
+    }
+
+    .segment-table th,
+    .segment-table td {
+        padding: 10px 12px;
+        border-bottom: 1px solid var(--card-border);
+        text-align: left;
+    }
+
+    .segment-table th {
+        background: var(--table-header-bg);
+        font-weight: 600;
+        font-size: 0.85em;
+        text-transform: uppercase;
+        letter-spacing: 0.3px;
+    }
+
+    .room-option {
+        display: flex;
+        align-items: center;
+        padding: 14px 16px;
+        margin-bottom: 8px;
+        border: 2px solid var(--card-border);
+        border-radius: 8px;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        background: var(--transfer-bg);
+    }
+
+    .room-option:hover {
+        border-color: var(--accent-purple);
+        background: var(--accent-purple-light);
+    }
+
+    .room-option input[type="radio"] {
+        margin-right: 14px;
+        width: 18px;
+        height: 18px;
+        accent-color: var(--accent-purple);
+    }
+
+    .room-option .room-details {
+        flex: 1;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .room-option .room-name {
+        font-weight: 600;
+        font-size: 1.05em;
+    }
+
+    .room-option .room-meta {
+        font-size: 0.85em;
+        opacity: 0.75;
+    }
+
+    .room-option .room-rates {
+        text-align: right;
+        font-size: 0.9em;
+    }
+
+    .room-option .room-rates .rate {
+        font-weight: 600;
+    }
+
+    .form-section {
+        margin-top: 20px;
+        padding: 16px;
+        background: var(--card-bg);
+        border-radius: 8px;
+        border: 1px solid var(--card-border);
+    }
+
+    .form-section label {
+        display: block;
+        margin-bottom: 6px;
+        font-weight: 600;
+    }
+
+    .form-section input[type="text"],
+    .form-section textarea {
+        width: 100%;
+        max-width: 500px;
+        padding: 10px;
+        border: 1px solid var(--card-border);
+        border-radius: 6px;
+        background: var(--transfer-bg);
+        color: var(--transfer-text);
+        font-size: 0.95em;
+    }
+
+    .form-section textarea {
+        height: 60px;
+        resize: vertical;
+    }
+
+    .ac-toggle {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-top: 6px;
+    }
+
+    .ac-toggle input[type="checkbox"] {
+        width: 20px;
+        height: 20px;
+        accent-color: var(--accent-purple);
+    }
+
+    .btn-transfer {
+        background-color: #7c3aed !important;
+        color: white !important;
+        padding: 10px 28px !important;
+        border: none !important;
+        border-radius: 6px !important;
+        cursor: pointer;
+        font-weight: bold;
+        font-size: 1em;
+        transition: opacity 0.2s;
+    }
+
+    .btn-transfer:hover {
+        opacity: 0.9;
+    }
+
+    .btn-cancel {
+        background-color: #6b7280 !important;
+        color: white !important;
+        padding: 10px 24px !important;
+        border: none !important;
+        border-radius: 6px !important;
+        text-decoration: none;
+        display: inline-block;
+        margin-left: 10px;
+    }
+
+    .no-rooms-msg {
+        padding: 20px;
+        text-align: center;
+        background: #fef2f2;
+        color: #991b1b;
+        border: 1px solid #fecaca;
+        border-radius: 8px;
+    }
+
+    .status-badge {
+        display: inline-block;
+        padding: 3px 10px;
+        border-radius: 20px;
+        font-size: 0.8em;
+        font-weight: 600;
+        text-transform: uppercase;
+    }
+
+    .status-checkin { background: #d1fae5; color: #065f46; }
+    .status-reserved { background: #fef3c7; color: #92400e; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div id="content-main">
+    <div class="transfer-container">
+        <h1 style="margin-bottom: 4px;">🔄 Transfer Room</h1>
+        <p style="opacity: 0.7; margin-bottom: 20px;">Move this booking to a different room. Billing will automatically track the change.</p>
+
+        <!-- Current Booking Info -->
+        <div class="info-grid">
+            <div class="info-item">
+                <span class="info-label">Customer</span>
+                <span class="info-value">{{ booking.customer.first_name }} {{ booking.customer.last_name }}</span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">Current Room</span>
+                <span class="info-value">Room {{ booking.room.id }} ({{ booking.room.room_type.name }})</span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">Check-in → Check-out</span>
+                <span class="info-value">{{ booking.checkin_date }} → {{ booking.checkout_date }}</span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">Status</span>
+                <span class="info-value">
+                    <span class="status-badge {% if booking.booking_status == 'checkin' %}status-checkin{% else %}status-reserved{% endif %}">
+                        {{ booking.get_booking_status_display }}
+                    </span>
+                    &nbsp;
+                    {% if booking.is_ac %}❄️ AC{% else %}🌡️ Non-AC{% endif %}
+                </span>
+            </div>
+        </div>
+
+        <!-- Segment History -->
+        {% if segments %}
+        <div class="section-title">📋 Segment History</div>
+        <table class="segment-table">
+            <thead>
+                <tr>
+                    <th>Room</th>
+                    <th>AC/Non-AC</th>
+                    <th>From</th>
+                    <th>To</th>
+                    <th>Reason</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for seg in segments %}
+                <tr>
+                    <td>Room {{ seg.room.id }} ({{ seg.room.room_type.name }})</td>
+                    <td>{% if seg.is_ac %}❄️ AC{% else %}🌡️ Non-AC{% endif %}</td>
+                    <td>{{ seg.start_date }}</td>
+                    <td>{% if seg.end_date %}{{ seg.end_date }}{% else %}<em>ongoing</em>{% endif %}</td>
+                    <td>{{ seg.reason|default:"—" }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% endif %}
+
+        <!-- Available Rooms -->
+        <div class="section-title">🏨 Select New Room</div>
+
+        {% if available_rooms %}
+        <form method="POST" id="transfer-form">
+            {% csrf_token %}
+
+            <div style="margin-bottom: 20px;">
+                {% for room in available_rooms %}
+                <label class="room-option">
+                    <input type="radio" name="new_room" value="{{ room.id }}" required>
+                    <div class="room-details">
+                        <div>
+                            <div class="room-name">Room {{ room.id }}</div>
+                            <div class="room-meta">{{ room.room_type.name }} · Floor {{ room.floor }}</div>
+                        </div>
+                        <div class="room-rates">
+                            <div class="rate">Base: ₹{{ room.room_type.base_rate }}/day</div>
+                            {% if room.room_type.ac_rate %}
+                            <div class="rate" style="color: #2563eb;">AC: ₹{{ room.room_type.ac_rate }}/day</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </label>
+                {% endfor %}
+            </div>
+
+            <!-- AC Preference -->
+            <div class="form-section">
+                <label>AC Preference for New Room</label>
+                <div class="ac-toggle">
+                    <input type="checkbox" name="is_ac" id="is_ac" {% if booking.is_ac %}checked{% endif %}>
+                    <span>Enable AC (charges AC rate)</span>
+                </div>
+            </div>
+
+            <!-- Reason -->
+            <div class="form-section" style="margin-top: 12px;">
+                <label for="reason">Reason for Transfer (optional)</label>
+                <textarea name="reason" id="reason" placeholder="e.g., Online booking guest arriving, room upgrade, maintenance..."></textarea>
+            </div>
+
+            <!-- Actions -->
+            <div style="margin-top: 24px; display: flex; align-items: center;">
+                <button type="submit" class="btn-transfer">🔄 Transfer Room</button>
+                <a href="{% url 'admin:booking_service_booking_changelist' %}" class="btn-cancel">Go Back</a>
+            </div>
+        </form>
+        {% else %}
+        <div class="no-rooms-msg">
+            <p style="font-weight: 600; margin-bottom: 4px;">No rooms available for transfer</p>
+            <p style="font-size: 0.9em;">All rooms are either booked, occupied, or under maintenance for the remaining dates of this booking.</p>
+        </div>
+        <div style="margin-top: 20px;">
+            <a href="{% url 'admin:booking_service_booking_changelist' %}" class="btn-cancel" style="margin-left: 0;">Go Back</a>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

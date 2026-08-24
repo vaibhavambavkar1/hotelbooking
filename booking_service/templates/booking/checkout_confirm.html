@@ -115,10 +115,23 @@
                 </tr>
             </thead>
             <tbody>
+                {% if has_segments %}
+                    {% for seg in segments %}
+                    <tr>
+                        <td>Room {{ seg.room.id }} ({{ seg.room.room_type.name }} - {{ seg.ac_label }}) × {{ seg.days }} day{{ seg.days|pluralize }}</td>
+                        <td>{{ seg.amount }} INR</td>
+                    </tr>
+                    {% endfor %}
+                    <tr style="border-top: 2px solid var(--bill-border);">
+                        <td><strong>Room Total</strong></td>
+                        <td><strong>{{ bill.subtotal_room }} INR</strong></td>
+                    </tr>
+                {% else %}
                 <tr>
                     <td>Room Charges ({{ booking.room.id }} - {{ booking.num_days }} days)</td>
                     <td>{{ bill.subtotal_room }} INR</td>
                 </tr>
+                {% endif %}
                 <tr>
                     <td>Additional Services</td>
                     <td>{{ bill.subtotal_services }} INR</td>

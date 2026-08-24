@@ -3,13 +3,25 @@ from import_export.admin import ImportExportModelAdmin
 from django.urls import reverse
 from django.utils.html import format_html
 from django.contrib.admin.widgets import AdminSplitDateTime
-from .models import Booking,Guest,ContactMessage
+from .models import Booking,Guest,ContactMessage,BookingSegment
 from room_service.models import Room
 from import_export.formats.base_formats import XLSX, CSV
 from django.urls import path
 from .services import room_dashboard
 from .views import booking_dashboard
 from .forms import GuestInlineFormset
+
+class BookingSegmentInline(admin.TabularInline):
+    model = BookingSegment
+    extra = 0
+    readonly_fields = ('room', 'is_ac', 'start_date', 'end_date', 'reason')
+    can_delete = False
+    verbose_name = "Room/AC Segment"
+    verbose_name_plural = "Room/AC Segments (Transfer & AC History)"
+
+    def has_add_permission(self, request, obj=None):
+        return False
+
 
 class GuestInline(admin.TabularInline):
     model = Guest
@@ -32,7 +44,7 @@ class GuestAdmin(admin.ModelAdmin):
 
 @admin.register(Booking)
 class BookingAdmin(ImportExportModelAdmin,admin.ModelAdmin):
-    inlines = [GuestInline]
+    inlines = [GuestInline, BookingSegmentInline]
 
     list_display = (
         'id',
@@ -45,6 +57,8 @@ class BookingAdmin(ImportExportModelAdmin,admin.ModelAdmin):
         'total_amount',
         'cancel_reservation',
         'checkin_room',
+        'transfer_room_btn',
+        'toggle_ac_btn',
         'view_bill_link',
         'checkout_room',
     )
@@ -165,6 +179,31 @@ class BookingAdmin(ImportExportModelAdmin,admin.ModelAdmin):
         else:
             return format_html('<span style="color:gray;">---</span>')
 
+    def transfer_room_btn(self, obj):
+        if obj.booking_status in [Booking.BookingStatus.CHECKIN, Booking.BookingStatus.RESERVED]:
+            url = reverse("transfer_room", args=[obj.id])
+            return format_html(
+                f'<a href="{url}" '
+                'style="background-color:#7c3aed; color:white; padding:4px 10px; '
+                'border-radius:6px; text-decoration:none; font-size:0.9em; white-space:nowrap;">🔄 Transfer</a>'
+            )
+        return format_html('<span style="color:gray;">—</span>')
+    transfer_room_btn.short_description = "Transfer Room"
+
+    def toggle_ac_btn(self, obj):
+        if obj.booking_status == Booking.BookingStatus.CHECKIN:
+            url = reverse("toggle_ac", args=[obj.id])
+            label = "❄️ AC Off" if obj.is_ac else "❄️ AC On"
+            bg_color = "#dc2626" if obj.is_ac else "#2563eb"
+            return format_html(
+                f'<a href="{url}" '
+                f'style="background-color:{bg_color}; color:white; padding:4px 10px; '
+                'border-radius:6px; text-decoration:none; font-size:0.9em; white-space:nowrap;"'
+                f'>{label}</a>'
+            )
+        return format_html('<span style="color:gray;">—</span>')
+    toggle_ac_btn.short_description = "AC Toggle"
+
 class MyAdminSite(admin.AdminSite):
 
     def each_context(self, request):
@@ -205,3 +244,20 @@ admin.site.site_header = format_html(
 )
 admin.site.site_title = "Hotel Admin Portal"
 admin.site.index_title = "Welcome to Hotel Dashboard"
+
+
+@admin.register(BookingSegment)
+class BookingSegmentAdmin(admin.ModelAdmin):
+    list_display = ('booking', 'room', 'is_ac', 'start_date', 'end_date', 'reason')
+    list_filter = ('is_ac', 'room')
+    search_fields = ('booking__customer__first_name', 'booking__customer__last_name', 'room__id')
+    readonly_fields = ('booking', 'room', 'is_ac', 'start_date', 'end_date', 'reason', 'created_at')
+
+    def has_add_permission(self, request):
+        return False
+
+    def has_change_permission(self, request, obj=None):
+        return False
+
+    def has_delete_permission(self, request, obj=None):
+        return False
