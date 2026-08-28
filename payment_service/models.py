@@ -12,6 +12,7 @@ class FinalBill(models.Model):
     subtotal_room = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     subtotal_services = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     tax = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    additional_charges = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     discount = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     total = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     generated_at = models.DateTimeField(auto_now_add=True)
@@ -48,7 +49,7 @@ class FinalBill(models.Model):
         tax= Decimal(get_gst_taxes("room")/100)
         subtotal = self.subtotal_room + self.subtotal_services
         self.tax = subtotal * Decimal(tax)
-        self.total = subtotal + self.tax - self.discount
+        self.total = subtotal + self.tax + self.additional_charges - self.discount
         self.booking.total_amount=self.total
         return self.total
 

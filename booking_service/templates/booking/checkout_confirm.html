@@ -127,6 +127,10 @@
                     <td>Tax Charges</td>
                     <td>{{ bill.tax }} INR</td>
                 </tr>
+                <tr>
+                    <td>Additional Charges</td>
+                    <td><span id="additional-charges-display">{{ bill.additional_charges }}</span> INR</td>
+                </tr>
                 <tr class="total-row">
                     <td>Subtotal (Incl. Tax)</td>
                     <td><span id="base-total-display">{{ bill.total }}</span> INR</td>
@@ -137,6 +141,12 @@
         <form method="POST" id="checkout-form">
             {% csrf_token %}
             <div class="form-group">
+                <label for="additional_charges" style="display: block; margin-bottom: 8px; font-weight: 600;">Additional Charges (INR):</label>
+                <input type="text" name="additional_charges" id="additional_charges" value="{{ bill.additional_charges }}"
+                    placeholder="Enter additional charges here"
+                    style="padding: 10px; width: 100%; max-width: 300px; border: 1px solid var(--bill-border); border-radius: 4px; outline: none; margin-bottom: 15px;"
+                    oninput="this.value = this.value.replace(/[^0-9.]/g, '').replace(/(\..*)\./g, '$1'); updateTotal()">
+
                 <label for="discount" style="display: block; margin-bottom: 8px; font-weight: 600;">Apply Discount
                     (INR):</label>
                 <input type="text" name="discount" id="discount" value="{{ bill.discount }}"
@@ -165,14 +175,20 @@
 <script>
     function updateTotal() {
         var initialDiscount = parseFloat("{{ bill.discount }}") || 0;
+        var initialAdditional = parseFloat("{{ bill.additional_charges }}") || 0;
         var currentBillTotal = parseFloat("{{ bill.total }}") || 0;
-        var subtotalBeforeCurrentDiscount = currentBillTotal + initialDiscount;
+        
+        var rawSubtotal = currentBillTotal + initialDiscount - initialAdditional;
 
         var discountInput = document.getElementById('discount');
+        var additionalInput = document.getElementById('additional_charges');
         var errorDisplay = document.getElementById('discount-error');
         var submitBtn = document.getElementById('submit-btn');
         
         var newDiscount = parseFloat(discountInput.value) || 0;
+        var newAdditional = parseFloat(additionalInput.value) || 0;
+        
+        var expectedFinal = rawSubtotal + newAdditional - newDiscount;
         var isValid = true;
         var errorMessage = "";
 
@@ -180,16 +196,23 @@
         if (newDiscount < 0) {
             isValid = false;
             errorMessage = "Discount cannot be negative.";
-        } 
+        } else if (newAdditional < 0) {
+            isValid = false;
+            errorMessage = "Additional charges cannot be negative.";
+        }
         // 2. Check for 100% discount (Final amount must be > 0)
-        else if (newDiscount >= subtotalBeforeCurrentDiscount) {
+        else if (expectedFinal <= 0 && newDiscount > 0) {
             isValid = false;
             errorMessage = "100% discount is not allowed. At least 1 INR must be charged.";
         }
 
         if (isValid) {
-            var finalValue = subtotalBeforeCurrentDiscount - newDiscount;
-            document.getElementById('final-amount').innerText = finalValue.toFixed(2);
+            document.getElementById('final-amount').innerText = expectedFinal.toFixed(2);
+            document.getElementById('additional-charges-display').innerText = newAdditional.toFixed(2);
+            var baseTotalDisplay = document.getElementById('base-total-display');
+            if (baseTotalDisplay) {
+                baseTotalDisplay.innerText = (rawSubtotal + newAdditional - newDiscount).toFixed(2);
+            }
             errorDisplay.style.display = 'none';
             submitBtn.disabled = false;
             submitBtn.style.opacity = '1';
