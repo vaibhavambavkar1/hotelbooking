@@ -1,19 +1,27 @@
-version: "3.9"
-
 services:
+
+  # ─── Django Web Application ────────────────────────────────────────────────
+  # MySQL is provided by the already-running external 'mysql' container
+  # on the shared-network. No need to spin up a second instance.
   web:
     container_name: hotelbooking_web
     build: .
     env_file:
       - .env
     environment:
-      # Point DB_HOST to the external MySQL container's name
-      DB_HOST: mysql
+      DB_HOST: mysql        # name of the external mysql container on shared-network
     ports:
-      - "8000:8000"
+      - "8001:8000"         # host 8001 → container 8000 (avoids conflict with other projects)
+    volumes:
+      - media_data:/app/media          # persist uploaded media files
+      - static_data:/app/staticfiles   # persist collected static files
     networks:
       - shared-network
     restart: always
+
+volumes:
+  media_data:
+  static_data:
 
 networks:
   shared-network:
